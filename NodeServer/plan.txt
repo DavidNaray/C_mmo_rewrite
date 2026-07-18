@@ -1,0 +1,9 @@
+when units are asked to be deployed at a point, the server knowing the units which wants to be deployed should access the walkMap for the tile, centering on the deployment position, for the number of units asked to be deployed explore at and around the deploy position at offsets, looking for valid points that a user can be placed on (according to the walkMap). I would check that position if its too close to another unit already in the scene but the drift threshold should not be so sensitive, they'll push each other out of collision on the client side.
+
+when units collide a function is called to inform the server that there was collision between two units and its asking the server for resolution. the server should be tracking the size of units and it looks at the predicted positions the units should be on and checks if there Is collision between them, if so, it displaces them an amount and emits those positions for those units back to the user to repel those units off each other. the client does not need to send the positions of the colliding objects, those positions cannot be trusted, the intent of it should be respected.
+
+
+when sending the client information for the movement command, itll be the arrays of paths from a starting portal to the end portal, along with the selected pixel point for the movement command. The client will then be required to build the flowfield for the movement. The server will also build a flowfield but to measure where a unit should be at any given time. If the client tampers with the data, they are only screwing themselves over, if they don't, units will more than likely be within an acceptable and believable margin of error.
+
+Server should receive an update when a unit reaches their destination, is blocked, or died etc
+if a client selects one of their units and decides to attack another unit then the server will need to be in the loop, apply the pathfinding algorithm to get units within range

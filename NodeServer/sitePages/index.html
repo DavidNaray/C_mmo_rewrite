@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="siteStyling.css">
+	<script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.176.0/build/three.module.js"
+            }
+        }
+    </script>
+    <title>Page Title</title>
+</head>
+<body>
+    <!-- <div id="canvas_debug" style="position:absolute;width: 20%;height: 50%;bottom: 0;right: 0;background-color: transparent;z-index: 1000000000000;"></div> -->
+
+    <div id="ThreeBlock" style="will-change: transform;"></div>
+    
+    <!-- parent, allows overlay to happen -->
+    
+    <div id="bruhTwo">
+        <div id="DailyRewardBox" >
+            <div style="width: 100%;">
+                <p style="font-size: min(3vw,1vh);">Daily Event:</p>
+            </div>
+
+            <div style="width: 100%;">
+                <p style="font-size: min(3vw,3vh);">A Report Lands on Your Desk</p>
+            </div>
+
+            <div id="DailyRewardImage" ></div>
+
+            <div style="width: calc(100% - 2px - 0.5vw);aspect-ratio: 1/0.4;background-color: white;border: black solid 1px;margin-top: 2px;margin-bottom: 2px;padding:0.25vw">
+                <p id="DailyRewardText" style="font-size: min(3vw,2vh);">Daily Event:</p>
+            </div>
+
+            <div style="width: 100%;flex:1;display: flex;justify-content: center;align-items: center;">
+                <div onclick="closeDaily()" style="display: inline-block;background-color: lightgrey;padding: 0.4vw;font-size: min(4vw,3vh);border: black solid 1px;">Interesting.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bruh">
+        <!-- the div that is the top bar, displaying the resources and buttons -->
+        <div id="Resources_Buttons">
+            <!-- focus tree button-->
+            <div style="padding:4px;display: grid;">
+                
+                <div style="background-color: navy;border-radius: 5px;"></div>
+            </div>
+            <!-- the grid div, upper half displays resources, lower the buttons for all sorts -->
+            <div id="TopButResHolder">
+
+                <div id="Resources" style="background-color: transparent;border-radius: 5px;"><!-- rgb(98, 98, 98) -->
+                    
+
+                    <div class="ResourceBlock"  data-tooltip="PoliticalPower"><!-- POLITICAL POWER -->
+                        <div class="IconGeneral" style="background-image: url('Icons/PoliticalPower.png')"></div>
+                        <div class="resourceText" id="PPRTxt">
+                            <p>N.A</p>
+                        </div>
+                    </div>
+
+                    <div class="ResourceBlock"  data-tooltip="Stability"><!-- STABILITY -->
+                        <div class="IconGeneral" style="background-image: url('Icons/Stability.png')"></div>
+                        <div class="resourceText" id="StabilityRTxt">
+                            <p>N.A</p>
+                        </div>
+                    </div>
+
+                    <div class="ResourceBlock" data-tooltip="WarSupport"><!-- WAR SUPPORT -->
+                        <div class="IconGeneral" style="background-image: url('Icons/WarSupport.png')"></div>
+                        <div class="resourceText" id="WarSupportRTxt">
+                            <p>N.A</p>
+                        </div>
+                    </div> 
+                               
+                    <div class="ResourceBlock" data-tooltip="ManPower"><!-- MANPOWER -->
+                        <div class="IconGeneral" style="background-image: url('Icons/ManPower.png')"></div>
+                        <div class="resourceText" id="ManPowerRTxt">
+                            <p>N.A</p>
+                        </div>
+                    </div> 
+
+                    <div class="ResourceBlock" data-tooltip="Gold"><!-- GOLD -->
+                        <div class="IconGeneral" style="background-image: url('Icons/Gold.png')"></div>
+                        <div class="resourceText" id="GoldRTxt">
+                            <p>N.A</p>
+                        </div>
+                    </div> 
+
+                    <div class="ResourceBlock" data-tooltip="Stone"><!-- STONE -->
+                        <div class="IconGeneral" style="background-image: url('Icons/Stone.png')"></div>
+                        <div class="resourceText" id="StoneRTxt">
+                            <p>N.A</p>
+                        </div>
+                    </div> 
+
+                    <div class="ResourceBlock" data-tooltip="Wood" ><!-- WOOD -->
+                        <div class="IconGeneral" style="background-image: url('Icons/Wood.png')"></div>
+                        <div class="resourceText" id="WoodRTxt">
+                            <p>N.A</p>
+                        </div>
+                    </div> 
+
+
+                </div>
+
+                <div id="TopBarButtonHolder" style="background-color: rgb(98, 98, 98);border-radius: 5px;">
+                    <div class="TopBarBtn" id="btn_Decisions" style="position: relative;">
+                        <div class="IconGeneral" style="background-image: url('Icons/Decisions.png');"></div>
+                    </div>
+                    <div class="TopBarBtn" id="btn_Research" >
+                        <div class="IconGeneral" style="background-image: url('Icons/Research.png');"></div>
+                    </div>
+                    <div class="TopBarBtn" id="btn_Finance" >
+                        <div class="IconGeneral" style="background-image: url('Icons/Finance.png');"></div>
+                    </div>
+                    <div class="TopBarBtn" id="btn_Construction">
+                        <div class="IconGeneral" style="background-image: url('Icons/Construction.png');"></div>
+                    </div>
+                    <div class="TopBarBtn" id="btn_Production" >
+                        <div class="IconGeneral" style="background-image: url('Icons/Production.png');"></div>
+                    </div>
+                    <div class="TopBarBtn" id="btn_Train" >
+                        <div class="IconGeneral" style="background-image: url('Icons/Recruitment.png');"></div>
+                    </div>
+                    <div class="TopBarBtn" id="btn_Security" >
+                        <div class="IconGeneral" style="background-image: url('Icons/Security.png');"></div>
+                    </div>
+
+                </div>
+
+
+
+            </div>
+        </div> 
+
+        <div id="Button_Dropdown" style="  display: none;">
+            <div style="width: 100%;aspect-ratio: 9/1;background-color: rgb(98, 98, 98);overflow-x: hidden;flex-shrink: 0;margin-bottom: 4px;">
+                <div style="height: calc(100% - 1vw);aspect-ratio: 1/1;float: right;padding: 0.5vw;">
+                     <div id="close_Dropdown" style="background-color: black;width: 100%;height: 100%;"></div>
+                </div>
+
+                <div style="height: 100%;float: none;overflow: hidden; padding-left: 0.5vw;align-items: center;display: flex;">
+                    <p id="Title" style="font-size: max(2vw,2vh);overflow: hidden;"></p>
+                </div>
+                
+            </div>
+ 
+            <div id="inner_B_Dropdown">
+                <div id="Dropdown_Content_Box" style="width: 100%;;background-color: rgb(98, 98, 98);overflow-x: hidden;"></div>
+            </div>
+
+        </div>
+
+        
+    </div>
+    
+    <div id="UIRoot">
+        <div id="SB">
+            <div id="CountryIcon"></div>
+            <div id="Rightside">
+                <div id="ResourceBar">
+                    <div class="ResourcePiece">
+                        <div class="IconGeneral" style="background-image: url('Icons/PoliticalPower.png')"></div>
+                        <div class="resourceText" id="PPblock">N.A</div>
+                    </div>
+
+                    <div class="ResourcePiece">
+                        <div class="IconGeneral" style="background-image: url('Icons/Stability.png')"></div>
+                        <div class="resourceText" id="Stabblock">N.A</div>
+                    </div>
+
+                    <div class="ResourcePiece">
+                        <div class="IconGeneral" style="background-image: url('Icons/WarSupport.png')"></div>
+                        <div class="resourceText" id="Warblock">N.A</div>
+                    </div>
+
+                    <div class="ResourcePiece">
+                        <div class="IconGeneral" style="background-image: url('Icons/ManPower.png')"></div>
+                        <div class="resourceText" id="Manblock">N.A</div>
+                    </div>
+
+                    <div class="ResourcePiece">
+                        <div class="IconGeneral" style="background-image: url('Icons/Gold.png')"></div>
+                        <div class="resourceText" id="GoldBlock">N.A</div>
+                    </div>
+
+                    <div class="ResourcePiece">
+                        <div class="IconGeneral" style="background-image: url('Icons/Stone.png')"></div>
+                        <div class="resourceText" id="StoneBlock">N.A</div>
+                    </div>
+
+                    <div class="ResourcePiece">
+                        <div class="IconGeneral" style="background-image: url('Icons/Wood.png')"></div>
+                        <div class="resourceText" id="WoodBlock">N.A</div>
+                    </div>
+                </div>
+
+                <div id="ButtonsBar">
+                    <div id="BD" class="IconGeneral BBarElem" style="background-image: url('Icons/Decisions.png');"></div>
+                    <div id="BR" class="IconGeneral BBarElem" style="background-image: url('Icons/Research.png');"></div>
+                    <div id="BF" class="IconGeneral BBarElem" style="background-image: url('Icons/Finance.png');"></div>
+                    <div id="BC" class="IconGeneral BBarElem" style="background-image: url('Icons/Construction.png');"></div>
+                    <div id="BP" class="IconGeneral BBarElem" style="background-image: url('Icons/Production.png');"></div>
+                    <div id="BRc"class="IconGeneral BBarElem" style="background-image: url('Icons/Recruitment.png');"></div>
+                    <div id="BS" class="IconGeneral BBarElem" style="background-image: url('Icons/Security.png');"></div>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="DropDown">
+            <div id="DDTitleParent">
+                <div class="resourceText" id="DDTitle">Title</div>
+                <div id="closeDDBtnParent"><div class="IconGeneral" id="closeDDBtn"></div></div>
+            </div>
+            
+            <div class="DDChild" id="SelectBox" style="display:none"></div>
+            
+            <div class="DDChild" id="DecisionBox"></div>
+
+            <div class="DDChild" id="ResearchBox">
+                <div class="RTxt">Technology is unlocked by chance through Daily event (first login of the day).</div>
+                <div id="RBody"></div>
+            </div>
+
+            <div class="DDChild" id="CommunityBox"></div>
+            <div class="DDChild" id="ConstructionBox">
+                <div class="RTxt">Available Buildings </div>
+                <div id="CBody"></div>
+            </div>
+            <div class="DDChild" id="ProductionBox"></div>
+
+            <div class="DDChild" id="TrainingBox">
+                <div class="RTxt">Recruitable Units</div>
+                <div id="TBBody"></div>
+
+                <div class="RTxt">Training Regimens</div>
+                <div id="TBRegBody"></div>
+            </div>
+            
+            <div class="DDChild" id="SecurityBox"></div>
+        </div>
+
+
+        <div id="BottomSec"></div>
+
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="siteJS.js"></script>    
+
+
+    
+</body>
+
+<script>
+    function closeDaily(){
+        document.getElementById("bruhTwo").style.display = "none";
+    }
+</script>
+</html>

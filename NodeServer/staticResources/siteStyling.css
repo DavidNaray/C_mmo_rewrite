@@ -1,0 +1,440 @@
+
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  /* background-color: transparent; */
+}
+
+#ThreeBlock {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+#UIRoot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;     /* full-screen overlay */
+  pointer-events: none; /* let clicks go through unless overridden */
+  z-index: 999;
+ 
+  display:flex;
+  flex-direction: column;
+  /* display:none */
+  
+}
+
+#CountryIcon{
+  height:100%;
+  aspect-ratio: 1.7/1;
+  background: rgb(98, 98, 98);
+  border-radius: max(4px, 0.3vw)
+}
+
+#Rightside{
+  display: grid;
+  grid-template-rows: 0.9fr 1.2fr;
+}
+
+#ResourceBar{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  column-gap: max(4px, 0.3vw);
+  padding-left: max(4px, 0.3vw);
+  margin-bottom: max(4px, 0.3vw);
+}
+
+#ButtonsBar{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  column-gap: max(4px, 0.3vw);
+  margin-left: max(4px, 0.3vw);
+  background-color: rgb(98, 98, 98);
+  border-radius: max(4px, 0.3vw);
+  padding: max(4px, 0.3vw);
+}
+
+.ResourcePiece{
+  display: grid;
+  width:100%;
+  height:100%;
+
+  background-color: rgb(98, 98, 98);
+  border-radius: max(4px, 0.3vw);
+  grid-template-columns: 1fr 3fr;
+
+  container-type: size;
+}
+
+.IconGeneral{
+  /* height:100%; */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.resourceText{
+  font-size: clamp(4px, 60cqh, 32px);
+  line-height: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;  
+  
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+.BBarElem{
+  background-color: rgb(188, 187, 187);
+  border-radius: max(4px, 0.3vw);
+}
+
+#DDTitleParent{
+  display:grid;
+  grid-template-columns: 11fr 1fr;
+}
+
+#closeDDBtnParent{
+  width: 100%;
+  height:100%;
+}
+
+#closeDDBtn{
+  height:100%;
+  aspect-ratio: 1/1;
+  float: right;
+  border-radius: max(4px, 0.3vw);
+  background-color: rgb(188, 187, 187);
+  background-image:url('Icons/Cross.png')
+}
+
+#DDTitle{
+  width:calc(100% - max(8px, 0.6vw));
+  aspect-ratio: 13/1;
+  background-color: rgb(188, 187, 187);
+  border-radius: max(4px, 0.3vw);
+
+  justify-content: left;
+  padding-left: max(4px, 0.3vw);
+  padding-right: max(4px, 0.3vw);
+}
+
+.DDChild{
+  flex: 1 1 auto;
+  min-width: 0;
+  background-color: rgb(98, 98, 98);
+  border-radius: max(4px, 0.3vw);
+  margin-top: max(4px, 0.3vw);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-color: rgb(188, 187, 187) gray;
+  scrollbar-width: thin;  
+  padding:max(4px, 0.3vw);
+}
+
+.RTxt{
+  display:flex;
+  padding:max(4px, 0.3vw);
+  width:calc(100% - max(12px, 0.9vw));
+  background-color: rgb(188, 187, 187);
+  border-radius: max(2px, 0.15vw) max(2px, 0.15vw);
+  font-size: max(15px,1vw);
+}
+
+#RBody{
+  width:calc(100% - max(20px, 1.5vw));
+  border-radius: 0 0 max(2px, 0.15vw) max(2px, 0.15vw);
+
+  display: grid;
+  grid-template-columns: repeat(8,1fr);
+  column-gap:max(12px, 0.8vw);
+  grid-auto-rows:1fr;
+  row-gap: max(8px, 0.6vw);;
+
+  padding:max(8px, 0.6vw);
+  padding-bottom:max(4px, 0.3vw)
+}
+
+#TBBody{
+  width:calc(100% - max(20px, 1.5vw));
+  border-radius: 0 0 max(2px, 0.15vw) max(2px, 0.15vw);
+
+  display: grid;
+  grid-template-columns: repeat(8,1fr);
+  column-gap:max(12px, 0.8vw);
+  grid-auto-rows:1fr;
+  row-gap: max(8px, 0.6vw);;
+
+  padding:max(8px, 0.6vw);
+  /* padding-bottom:max(4px, 0.3vw) */
+}
+
+#CBody{
+  width:calc(100% - max(20px, 1.5vw));
+  border-radius: 0 0 max(2px, 0.15vw) max(2px, 0.15vw);
+
+  display: grid;
+  grid-template-columns: repeat(8,1fr);
+  column-gap:max(12px, 0.8vw);
+  grid-auto-rows:1fr;
+  row-gap: max(8px, 0.6vw);;
+
+  padding:max(8px, 0.6vw);
+}
+
+#TBRegBody{
+  width:calc(100% - max(20px, 1.5vw));
+  border-radius: 0 0 max(2px, 0.15vw) max(2px, 0.15vw);
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill,1fr);
+  row-gap: max(8px, 0.6vw);;
+
+  padding:max(8px, 0.6vw);
+  padding-bottom: max(4px, 0.3vw);;
+}
+
+
+
+
+
+
+#bruhTwo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;     /* full-screen overlay */
+  background-color: transparent;
+  pointer-events: none; /* let clicks go through unless overridden */
+  z-index: 1;
+
+  display: none;
+  flex-direction: column;
+}
+#bruhTwo > div {
+  /* position: absolute; */
+  
+  /* left: 0; */
+  pointer-events: auto; /* only this div gets events */
+}
+/* style="background-color: white;margin-top:10%;margin-left:25%;width:50%;height:50%" */
+#DailyRewardBox{
+  background-color: white;
+  padding: 0.5vw;
+  margin-top: max(10%,3vh);
+  margin-left: max(25%,3vw);
+  width: min(550px,40%);
+  position: relative;  
+  overflow: hidden;
+  aspect-ratio: 0.8/1;
+  display: flex;
+  flex-direction: column;
+
+
+}
+
+#DailyRewardImage{
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+
+  width: 100%;
+  aspect-ratio: 1/0.6;
+  background-color: gray;
+}
+
+#bruh {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;     /* full-screen overlay */
+  background-color: transparent;
+  pointer-events: none; /* let clicks go through unless overridden */
+  z-index: 1;
+
+  display:none;
+  /* flex;  */
+  flex-direction: column;
+}
+
+#bruh > div {
+  /* position: absolute; */
+  
+  left: 0;
+  pointer-events: auto; /* only this div gets events */
+}
+
+#Resources_Buttons{
+  top: 0;
+  width: min(100%, 800px);
+  aspect-ratio: 12/1;
+  min-height: 7%;
+  background-color: gray;
+  display: grid;
+  grid-template-columns: 1fr 5fr;
+  border-radius: 0 0 7px 0;
+}
+
+#Button_Dropdown{
+  width:  min(550px,40%);
+  max-height: 90%;
+
+  background-color: gray;
+  position: relative;  
+  display: flex;
+  flex-direction: column;
+
+  padding:min(0.75vw,0.75vh);
+  padding-top: 0;
+  overflow: hidden;
+}
+
+#inner_B_Dropdown{
+  position: relative;
+
+  width: 100%;
+  height: calc(100% - min(0.75vw,0.75vh));
+  /* - min(0.75vw,0.75vh)); */
+  /* margin-bottom: min(0.75vw,0.75vh); */
+  overflow-y: scroll;  
+  scrollbar-gutter: stable;
+  scrollbar-color: black gray;
+  scrollbar-width: thin;  
+  /* EXTREMELY IMPORTANT, STOPS A HUGE BOX APPEARING FOR SOME REASON, YOU NEED GAP BETWEEN DIV AND THE SCTROLL BAR */
+  padding-right: 1px;
+  /* ---------------------------------------------------------------------------------------------------- */
+  /* padding-bottom: 1px; */
+
+  &::-webkit-scrollbar-button {
+    display: none;
+    height: 0;
+    width: 0;
+  }
+}
+
+#Title{
+  margin:0;
+  line-height: 1.25;
+  padding:0;
+  font-size: max(2.6vw,2.6vh);
+  color:white
+}
+
+#TopButResHolder{
+  display: grid;
+  grid-template-rows: 1.3fr 2fr;
+  padding:4px 4px 4px 0px;
+  row-gap: 4px;
+}
+
+#Resources {
+  /* grid-column: 1 / -1; Span all 7 columns */
+  /* background: orange;  Example */
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  column-gap: 4px;
+  /* padding-left:4px; */
+  /* padding-right: 4px; */
+}
+
+.ResourceBlock{
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  overflow: hidden;
+  position: relative;
+  background-color: rgb(98, 98, 98);
+  border-radius: 4px;
+}
+
+.resource-tooltip {
+  position: absolute;
+  background: gray;  /* semi-transparent gray */
+  color: white;
+  padding: 0.4vw;
+  border-radius: 4px;
+  pointer-events: none; /* so it doesn't block mouse events */
+  white-space: nowrap;
+  z-index: 1000;
+  display: none; /* hidden by default */
+  font-size: max(1vw,1vh);
+  line-height: max(1.2vw,1.2vh);
+  /* width: 15vw; */
+  /* max-width: 15vw; */
+}
+
+#TopBarButtonHolder{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  column-gap: 4px;
+  padding:4px 4px 2px 4px;
+  /* padding-right: 4px; */
+}
+
+canvas {
+  position: absolute;
+  /* top: 0; left: 0; */
+  /* display: block; */
+  width: 100%;
+  height: 100%;
+}
+
+.TopBarBtn{
+  background-color: rgb(188, 187, 187);
+  border-radius: 6px;
+}
+
+
+
+p{
+  margin:0;
+  line-height: 1.25;
+  padding:0
+}
+
+@media (max-width: 800px) {
+  #Button_Dropdown {
+    /* width: 100%; */
+    /* aspect-ratio: 1.75/1; */
+    max-height: 40%;
+    /* padding:min(0.75vw,0.75vh) */
+  }
+  #DailyRewardBox{
+    width: 80%;
+    margin-left: 10%;
+  }
+}
+@media (max-width: 550px) {
+  #Button_Dropdown {
+    width: calc(100% - max(1.5vw,1.5vh));
+    /* aspect-ratio: 1.75/1; */
+    /* height: 40%; */
+    padding:max(0.75vw,0.75vh);
+    padding-top: 0;
+  }
+  #Resources_Buttons{
+    border-radius: 0;
+  }
+  #TopBarButtonHolder{
+    column-gap: 2px;
+    padding-left:2px;
+    padding-right: 2px;
+  }
+  #DailyRewardBox{
+    width: 80%;
+    margin-left: 10%;
+  }
+}
+
+
+

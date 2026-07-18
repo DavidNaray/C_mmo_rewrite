@@ -1,0 +1,154 @@
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.176.0/build/three.module.js";
+
+import {camera,InputState,scene,controls,UserId} from "../siteJS.js"
+import {globalmanager} from "./GlobalInstanceMngr.js"
+import {UnitSelectionDisplay,moveableSelected} from "./DropDownUI.js"
+
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let DragSelectionKey=false;
+
+
+export const raycaster = new THREE.Raycaster();
+export const pointer  = new THREE.Vector2();
+export const suppressPlacement={value:false}
+
+export function onPointerMove(event) {
+    pointer .x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer .y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    raycaster.setFromCamera( pointer, camera );
+}
+
+export function intersectsTileMeshes(){
+    return raycaster.intersectObjects(globalmanager.allTileMeshes, true);
+}
+
+
+export function MouseDownHandling(e) {
+    // if(DragSelectionKey){controls.enabled=false}
+    if (e.button === 0) {//left click
+        
+        if (InputState.value == 'neutral') {
+            // console.log("neutral start man");
+            moveableSelected.value={};
+            InputState.value = 'BoxClickSelection'        
+
+        }
+        else if(InputState.value == 'Builder'){
+            controls.enabled=true;
+            DragSelectionKey=false
+            // dragStart = { x: e.clientX, y: e.clientY };
+            // isDragging = false;
+        }//DragSelectionKey=false}            
+        dragStart = { x: e.clientX, y: e.clientY };
+        isDragging = false;
+
+    }else if(e.button === 2){//right click
+        // console.log("right click")
+    }   
+}
+
+export function MouseMovingHandling(e) {
+    // console.log("InputState.value",InputState.value,DragSelectionKey)
+    if (InputState.value == 'BoxClickSelection' && DragSelectionKey) {
+        // console.log("mouse move drag")
+        
+        const dx = e.clientX - dragStart.x;
+        const dy = e.clientY - dragStart.y;
+
+        if (Math.abs(dx) > 0.3 || Math.abs(dy) > 0.3) {
+            isDragging = true;
+            // draw selection box here
+            console.log("dragging")
+            
+        }else{//hide selection box since it would be small
+            isDragging = false; 
+            console.log("area small, removing drag box")
+        }
+    }
+    else if(InputState.value == 'Builder'){
+        // console.log("suppress building placement")
+        const dx = e.clientX - dragStart.x;
+        const dy = e.clientY - dragStart.y;
+
+        if (Math.abs(dx) > 0.3 || Math.abs(dy) > 0.3) {
+            isDragging = true;
+            // draw selection box here
+            // console.log("dragging")
+            
+        }else{//hide selection box since it would be small
+            isDragging = false; 
+            // console.log("area small, removing drag box")
+        }
+    }
+
+}
+
+export function MouseUpHandling(e) {
+    if (e.button === 0) {//left click
+        if (InputState.value === 'BoxClickSelection') {
+            if (isDragging) {
+                // perform box selection logic
+                console.log("dragging while mouse up?")
+            }else{//just a click effectively
+                console.log("muaahaha, just a click")
+                onPointerMove(e)
+            
+                const intersectsAll = raycaster.intersectObjects(scene.children, true);
+                const intersects = intersectsAll.filter(i => !globalmanager.allTileMeshes.includes(i.object));
+
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+
+                    if (hit.instanceId !== undefined) {
+                        // console.log('Instanced object hit, instanceId:', hit.instanceId);
+                        console.log('Base mesh:', hit.object);
+                        
+                        // You can now use hit.instanceId to reference that specific instance
+                        const sendOver=[hit]
+                        UnitSelectionDisplay(sendOver)
+                    } else {
+                        console.log('Non-instanced object hit:', hit.object);
+
+                    }
+                }else{
+                    var UnitInfoDispContentBox=document.getElementById("UnitInfoDispContentBox");
+                    if(UnitInfoDispContentBox && UnitInfoDispContentBox.style.display=="block"){
+                        // UnitInfoDispContentBox.style.display="none"
+                        document.getElementById("Button_Dropdown").style.display="none";
+                    }
+                }
+            }
+            // controls.enabled=true;//back to enabling controls, the default state
+            isDragging = false; //return to false, the neutral state for drag
+            InputState.value = 'neutral';//overall input state
+        }
+        else if(InputState.value == 'Builder' && isDragging){
+            console.log("suppress placement")
+            suppressPlacement.value=true
+        }
+
+
+        //note i could probably combine these two variable but cba.. it works rn
+    }
+}
+
+
+
+
+//when raycast hitting something as a selection or box selecting, everything is included bar the terrain meshes
+//on the server differentiation occurs and a response is made as to the user akin to {buildings:{..},units:{..}}
+//a ui is then built for this response, if they press to attempt to move, the values of units: {} is then passed onto the server
+//the server then calculates how they should move
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Shift') {DragSelectionKey = true;
+    controls.enabled=false
+  }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Shift'){DragSelectionKey = false;
+    controls.enabled=true
+  }
+});

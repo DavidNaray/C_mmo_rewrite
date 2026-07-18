@@ -29,8 +29,8 @@ void setupPipe(){
             //of it dont return immediately
         PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT, 
         1,//nMaxInstances
-        1024,//nOutBufferSize
-        1024,//nInBufferSize
+        65536,//nOutBufferSize
+        65536,//nInBufferSize
         0,//nDefaultTimeOut
         NULL//[in, optional] LPSECURITY_ATTRIBUTES lpSecurityAttributes
     );
@@ -42,8 +42,8 @@ void setupPipe(){
             //of it dont return immediately
         PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT, 
         1,//nMaxInstances
-        1024,//nOutBufferSize
-        1024,//nInBufferSize
+        65536,//nOutBufferSize
+        65536,//nInBufferSize
         0,//nDefaultTimeOut
         NULL//[in, optional] LPSECURITY_ATTRIBUTES lpSecurityAttributes
     );

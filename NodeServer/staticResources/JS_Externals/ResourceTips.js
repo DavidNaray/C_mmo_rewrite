@@ -183,7 +183,7 @@ export function makeToolTipTechnology(element,tipInfo){
         // console.log("Making tooltip for technology: ", tipInfo);
         const hasNoChildNodes=!tooltip.hasChildNodes()
         if(hasNoChildNodes){
-            GeneralToolTipTitleDiv(`Unlocked:${tipInfo.Unlocked}`,tooltip);
+            GeneralToolTipTitleDiv(`Unlocked:${tipInfo.unlocked}`,tooltip);
             GeneralToolTipTitleDiv(`${tipInfo.Description}`,tooltip);
         }
         tooltip.style.display = 'block';

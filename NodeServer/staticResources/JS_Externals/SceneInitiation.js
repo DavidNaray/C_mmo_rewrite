@@ -42,6 +42,8 @@ export function setupSocketConnection(){
         socket.emit("trainable")//request whats trainable/in training
     });
 
+    socket.on("TechTreeUpdate", (response) => {HandleTechTree(response.details)})
+
     socket.on("TickUpdate",async (response)=>{
         const replacements=response.replacements
         const positions=response.positions
@@ -51,7 +53,6 @@ export function setupSocketConnection(){
         const resources=response.resources
         const DailyReward=response.DailyReward
 
-        const TechTree=response.TechTree
         const Recruitable=response.Recruitable
 
         const NewRegimen=response.NewRegimen
@@ -80,8 +81,6 @@ export function setupSocketConnection(){
 
         //alert user of daily reward
         if(DailyReward){HandleDailyReward(DailyReward)}
-
-        if(TechTree){HandleTechTree(TechTree)}
 
         if(constructable){Handleconstructable(constructable)}
 
@@ -285,7 +284,7 @@ function HandleTechTree(TechTree){
         option.style.display="block"
         option.style.aspectRatio="1/1"
 
-        if(TechTree[key].Unlocked){
+        if(TechTree[key].unlocked){
             option.style.outline="lightgray dashed 0.1vw"; 
             option.style.backgroundColor="rgba(216,216,216,0.2)"; 
         }

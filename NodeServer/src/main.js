@@ -75,6 +75,10 @@ pipeMsgs.on('data', (data) => {
             usersocketMapAttempts.delete(msg.RId);
             io.to(sock).emit("failedLog");
             break;
+        case "TechDetails":
+            const sockid=usersocketMap.get(msg.username)
+            // console.log(msg.details)
+            io.to(sockid).emit("TechTreeUpdate",{details:msg.details});
         default:;
     }
 });
@@ -252,11 +256,11 @@ io.on('connection', async (socket) => {
 
     socket.on('TechTreeInfo',async() => {
         if(!socket.authenticated){console.log("unauthorised tile request");return;}
-
+        console.log("TechTreeUpdate",socket.username, socket.id)
         pipe.write(JSON.stringify({
             type: "TechTreeUpdate",
-            username: socket.username,
-            sockid:socket.id,
+            username: socket.username.toString(),
+            sockid:socket.id.toString(),
         }));
     })
 

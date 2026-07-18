@@ -84,14 +84,13 @@ void RegisterTask(void *arg){
         us.RId
     );
     send_message(msg);
-    
+
     GenerateTerrainTile(0,0);
     printf("generated terrain for user: %s\n", nu->username);
-    
 
     //add user to cache
     cache_insert_user(GlobalCache, nu);
-
+    
     pthread_mutex_unlock(&GlobalCache->lock);
 }
 

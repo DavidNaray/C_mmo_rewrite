@@ -57,7 +57,7 @@ typedef struct {
 TerrainSetup SetupTerrainFields(int xR,int yR,char nT[],float f,int s, char root[]);
 void ApplyTerrainFields();
 
-void GenerateTerrainTile(int x,int y);
+void GenerateTerrainTile(int x,int y, char* username);
 
 #endif
 

@@ -172,7 +172,7 @@ class UIManager {
     //---------------------------------
     RecruitButtonClicked(event){
         const WhichUnit=event.currentTarget.myParam
-        socket.emit('NewTraining',{"RequestMetaData":WhichUnit})
+        socket.emit('NewRegimen',{"RequestMetaData":WhichUnit})
         InputManager.setPlacementMode(false)
     }
     RegimenCountAdjust(event){

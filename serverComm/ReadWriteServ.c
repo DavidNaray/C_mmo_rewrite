@@ -4,21 +4,40 @@
 #include "../../DistributedNodes/scheduler.h"
 
 void send_message(char* msg){
-    DWORD bytesWritten=0;
-    DWORD bytesToWrite = (DWORD)(strlen(msg));
+    if (msg == NULL) return;
+
+    size_t orig_len = strlen(msg);
+    // Allocate space for the original string plus the '\n' character
+    size_t framed_len = orig_len + 1; 
+    
+    char* framed_msg = malloc(framed_len);
+    if (framed_msg == NULL) {
+        printf("send_message: malloc failed\n");
+        return;
+    }
+
+    // Copy original data and swap the null terminator for a newline
+    memcpy(framed_msg, msg, orig_len);
+    framed_msg[orig_len] = '\n'; 
+
+    DWORD bytesWritten = 0;
+    DWORD bytesToWrite = (DWORD)framed_len;
     
     BOOL ok = WriteFile(
         scheduler.msgPipe,
-        msg,
+        framed_msg,       // Write our newly framed message
         bytesToWrite,
         &bytesWritten,
         NULL
     );
 
-    if (!ok){printf("WriteFile failed: %lu\n", GetLastError());}
+    if (!ok) {
+        printf("WriteFile failed: %lu\n", GetLastError());
+    }
 
+    // Always free what you temporarily allocate!
+    free(framed_msg); 
 }
-
 
 void setupPipe(){
     scheduler.hPipe = CreateNamedPipe(

@@ -39,10 +39,17 @@ export function setupSocketConnection(){
         socket.emit("DailyReward") //request daily reward
         socket.emit("TechTreeInfo")//request tech tree
         socket.emit("constructable")//request whats buildable
-        socket.emit("trainable")//request whats trainable/in training
+        socket.emit("unitTypes")//what is trainable
+        socket.emit("trainable")//request whats in training
     });
 
     socket.on("TechTreeUpdate", (response) => {HandleTechTree(response.details)})
+
+    socket.on("availableUnitTypes", (response) => {HandleUnitTypes(response.types)})
+
+    socket.on("NewRegimen", (response) => {HandleNewRegimen(response)})
+
+    socket.on("RegLoad", (response) => {HandleRegLoad(response.details.regimens)})
 
     socket.on("TickUpdate",async (response)=>{
         const replacements=response.replacements
@@ -53,9 +60,6 @@ export function setupSocketConnection(){
         const resources=response.resources
         const DailyReward=response.DailyReward
 
-        const Recruitable=response.Recruitable
-
-        const NewRegimen=response.NewRegimen
         const AdjustRegimenCount=response.AdjustRegimenCount
         const DelRegimen=response.DelRegimen
 
@@ -83,10 +87,6 @@ export function setupSocketConnection(){
         if(DailyReward){HandleDailyReward(DailyReward)}
 
         if(constructable){Handleconstructable(constructable)}
-
-        if(Recruitable){HandleRecruitable(Recruitable)}
-
-        if(NewRegimen){HandleNewRegimen(NewRegimen)}
 
         if(AdjustRegimenCount){HandleAdjustRegimenCount(AdjustRegimenCount)}
 
@@ -117,7 +117,9 @@ export function setupSocketConnection(){
 
     socket.on("RecTiles",async (response)=>{
         console.log(response.RequestMetaData, "resposneee!!!!")
-        globalmanager.setOrigin(response.RequestMetaData.origintile);
+        if(response.RequestMetaData.origintile){
+            globalmanager.setOrigin(response.RequestMetaData.origintile);
+        }
 
         for (const TileData of response.RequestMetaData.tiles) {
             // console.log("TileData",TileData)
@@ -267,9 +269,12 @@ function HandleDailyReward(DailyReward){
     bruhTwo.style.display="flex"; // Show the reward box
 }
 
+
+
+
 function HandleTechTree(TechTree){
     function stringintoURL(str){return `Icons/TechTree/${str}.png`;}
-    
+    console.log(TechTree)
     const To=UImanager.getRBody();
     To.replaceChildren();
 
@@ -293,37 +298,14 @@ function HandleTechTree(TechTree){
     }
 }
 
-async function HandleUnitReplacements(replacements){
-    for(const replace of replacements){
-        const [oldId,newId,oldchunk,newchunk,pixel,owner,unitType,AssetClass]=replace.split("|")
-        const [oChunkX,oChunkY]=oldchunk.split(",").map(Number)
-        const [nchunkX,nchunkY]=newchunk.split(",").map(Number)
-
-        const RemoveFrom=globalmanager.getTile(oChunkX,oChunkY)
-        if(RemoveFrom){RemoveFrom.removeUnit(Number(oldId))}
-        else{/*user does not have the tile loaded to delete the unit */}
-        
-        const LoadTo=globalmanager.getTile(nchunkX,nchunkY)
-        if(LoadTo){
-            const Meta={
-                "position":pixel.split(",").map(Number),//in pixel values for the chunk its to be deployed in!
-                "UnitType":unitType,
-                "AssetClass":AssetClass,
-                "owner":owner,
-                "ServerId":Number(newId)
-            }
-            const objLoad=await globalmanager.objectLoad(unitType,AssetClass)
-            if(objLoad){LoadTo.addToScene(unitType, Meta)}
-        }
-        else{/*user does not have the tile loaded to create the unit */}
-    }
-}
-
-function HandleRecruitable(Recruitable){
-    
-    const To=UImanager.getTBBody()
+function HandleUnitTypes(types){
+    function stringintoURL(str){return `Icons/${str}Icon.png`;}
+    const To=UImanager.getTBBody();
     To.replaceChildren();
-    for(let [RType,strURL] of Object.entries(Recruitable)){
+
+    for (let key in types) {
+        const strURL=stringintoURL(key);
+
         let option=document.createElement("img");
         option.style.width="100%"
         option.style.height="100%"
@@ -331,24 +313,31 @@ function HandleRecruitable(Recruitable){
         option.style.objectFit="contain"
         option.style.display="block"
         option.style.aspectRatio="1/1"
-        option.style.outline="rgb(188, 187, 187) dashed 0.1vw"; 
-        option.style.backgroundColor="rgba(216,216,216,0.2)"; 
 
-        option.myParam=RType
 
+        if(types[key].unlocked){
+            option.style.outline="lightgray dashed 0.1vw"; 
+            option.style.backgroundColor="rgba(216,216,216,0.2)"; 
+        }
+        
+        option.myParam=key
         option.addEventListener("click",UImanager.RecruitButtonClicked)
+
         To.appendChild(option)
+        makeToolTipTechnology(option,types[key]);
     }
 }
 
-function HandleNewRegimen(NewRegimen){
-    if(!NewRegimen.Rid){return}//no permission
 
+function HandleRegLoad(regimens){for (const reg of regimens) {HandleNewRegimen(reg);}}
+
+function HandleNewRegimen(NewRegimen){
+    function stringintoURL(str){return `Icons/${str}Icon.png`;}
     function TopSec(elem){
         
         let Imgsec=document.createElement("img");
         Imgsec.style.width="100%"
-        Imgsec.src=NewRegimen.img;
+        Imgsec.src=stringintoURL(NewRegimen.regName);//NewRegimen.img;
         Imgsec.style.backgroundColor="rgb(188, 187, 187)";
         Imgsec.style.objectFit="contain"
         Imgsec.style.display="block"
@@ -369,7 +358,7 @@ function HandleNewRegimen(NewRegimen){
         TNTContainer.style.columnGap="max(4px, 0.3vw)"
 
         let TopTitle=document.createElement("div");
-        TopTitle.innerHTML=NewRegimen.UnitType
+        TopTitle.innerHTML=NewRegimen.regName;//NewRegimen.UnitType
         TopTitle.className="resourceText"
         TopTitle.style.fontSize="max(20px,1vw)";
         TopTitle.style.backgroundColor="rgb(188, 187, 187)";
@@ -498,7 +487,7 @@ function HandleNewRegimen(NewRegimen){
     option.style.gridTemplateColumns="10% 90%"
     option.style.columnGap="max(4px, 0.3vw)"
 
-    option.myParam=NewRegimen.Rid //reference to the appropriate regimen record on server
+    option.myParam=[NewRegimen.slot] //reference to the appropriate regimen record on server
 
     TopSec(option)
 
@@ -506,6 +495,37 @@ function HandleNewRegimen(NewRegimen){
 
     UImanager.hideBoxes("TrainingBox")//can overflow the box, this makes sure it catches that moment
 }
+
+
+
+
+
+async function HandleUnitReplacements(replacements){
+    for(const replace of replacements){
+        const [oldId,newId,oldchunk,newchunk,pixel,owner,unitType,AssetClass]=replace.split("|")
+        const [oChunkX,oChunkY]=oldchunk.split(",").map(Number)
+        const [nchunkX,nchunkY]=newchunk.split(",").map(Number)
+
+        const RemoveFrom=globalmanager.getTile(oChunkX,oChunkY)
+        if(RemoveFrom){RemoveFrom.removeUnit(Number(oldId))}
+        else{/*user does not have the tile loaded to delete the unit */}
+        
+        const LoadTo=globalmanager.getTile(nchunkX,nchunkY)
+        if(LoadTo){
+            const Meta={
+                "position":pixel.split(",").map(Number),//in pixel values for the chunk its to be deployed in!
+                "UnitType":unitType,
+                "AssetClass":AssetClass,
+                "owner":owner,
+                "ServerId":Number(newId)
+            }
+            const objLoad=await globalmanager.objectLoad(unitType,AssetClass)
+            if(objLoad){LoadTo.addToScene(unitType, Meta)}
+        }
+        else{/*user does not have the tile loaded to create the unit */}
+    }
+}
+
 
 function HandleAdjustRegimenCount(AdjustRegimenCount){
     if(!AdjustRegimenCount.Rid){return}

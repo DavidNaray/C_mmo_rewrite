@@ -9,6 +9,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include "../MongoDBReadWriteCache/Schema/TileSchema.h"
+#include "../MongoDBReadWriteCache/Cache.h"
+
 TerrainSetup TSetup;   
 fnl_state noise;    
 fnl_state warp;
@@ -132,11 +135,12 @@ void ApplyTerrainFields(){
     MountainNoise.gain = 0.2f;
     MountainNoise.lacunarity = 2.1f;
     MountainNoise.frequency = 0.005f;
-    }
+}
 
-void saveFile(pixel_t* buffer,char* extension){
+
+void saveFile(pixel_t* buffer,char* extension,int x,int y){
     char path[256];
-    _snprintf(path, sizeof(path), "%s/%s/%d%d.png", TSetup.saveRoot,extension, 0, 0);
+    _snprintf(path, sizeof(path), "%s/%s/%d%d.png", TSetup.saveRoot,extension, x, y);
     path[sizeof(path) - 1] = '\0';
 
     stbi_write_png(
@@ -230,7 +234,10 @@ void ApplyBiome(bool* BoundaryMask,
                 BiomeInfluence* influences, 
                 pixel_t* pixels,
                 pixel_t* Heightpixels,
-                pixel_t* Walkpixels){
+                pixel_t* Walkpixels,
+                Tile* tile,
+                int offsetX,
+                int offsetY){
     int W = TSetup.xResolution;
     int H = TSetup.yResolution;
 
@@ -249,7 +256,7 @@ void ApplyBiome(bool* BoundaryMask,
         kernel1D[i] = v;
         sum += v;
     }
-    for (int i = 0; i < 48; i++) {kernel1D[i] /= sum;}// normalize
+    for (int i = 0; i < 24; i++) {kernel1D[i] /= sum;}// normalize
 
     // 24x24 kernel
     float kernel[24][24];
@@ -297,6 +304,9 @@ void ApplyBiome(bool* BoundaryMask,
     for (int y = 0; y < H; y++) {for (int x = 0; x < W; x++) {
         int i=W*y+x;
 
+        int realX=x + (offsetX*(TSetup.xResolution));
+        int realY=y + (offsetY*(TSetup.yResolution));
+
         BiomeInfluence influence = out[i];
 
         float sum = influence.ocean + influence.plains + influence.mountains;
@@ -310,9 +320,9 @@ void ApplyBiome(bool* BoundaryMask,
         float plainsHeight;
         float mountainHeight;
 
-        pixel_t oceanColor     = getOceanColour(y,x,influence,&oceanHeight);//{  0,  0, 255 };
-        pixel_t plainsColor    = getPlainsColour(y,x,influence,&plainsHeight);//{  0, 255,  0 };
-        pixel_t mountainsColor = getMountainColour(y,x,influence,&mountainHeight);//{ 150, 150, 150 };
+        pixel_t oceanColor     = getOceanColour(realY,realX,influence,&oceanHeight);//{  0,  0, 255 };
+        pixel_t plainsColor    = getPlainsColour(realY,realX,influence,&plainsHeight);//{  0, 255,  0 };
+        pixel_t mountainsColor = getMountainColour(realY,realX,influence,&mountainHeight);//{ 150, 150, 150 };
 
         pixels[i].red =
             oceanColor.red     * influence.ocean +
@@ -345,16 +355,30 @@ void ApplyBiome(bool* BoundaryMask,
         //walkmap drawing
         float mT=0.5f;
         float oceanThreshold=0.2;
-        if(mntTot>mT){Walkpixels[i] = (pixel_t) {0,0,0};/*mountain/too high*/}
-        else if(influence.ocean>oceanThreshold){Walkpixels[i] = (pixel_t) {0,0,255};/*blue*/}
-        else{Walkpixels[i] = (pixel_t) {255,255,255};/*walkable-white*/}
+        if(mntTot>mT){/*mountain/too high*/
+            Walkpixels[i] = (pixel_t) {0,0,0};
+            tile->Buffer[y][x].cost=0;
+            tile->Buffer[y][x].walkability=false;
+        }
+        else if(influence.ocean>oceanThreshold){/*blue ocean*/
+            Walkpixels[i] = (pixel_t) {0,0,255};
+            tile->Buffer[y][x].cost=0;
+            tile->Buffer[y][x].walkability=false;
+        }
+        else{/*walkable-white*/
+            Walkpixels[i] = (pixel_t) {255,255,255};
+            tile->Buffer[y][x].walkability=true;
+            tile->Buffer[y][x].cost=1;
+        }
 
     }   }
-
+    
     free(out);
 }
 
-void GenerateTerrainTile(int x,int y){
+void GenerateTerrainTile(int x,int y,char* username){
+    printf("Gen for %d%d\n",x,y);
+
     pixel_t* pixels = malloc(TSetup.xResolution * TSetup.yResolution * sizeof(pixel_t));
     bool* BoundaryMask = malloc(TSetup.xResolution * TSetup.yResolution * sizeof(bool));
     BiomeInfluence* influences = malloc(TSetup.xResolution * TSetup.yResolution * sizeof(BiomeInfluence));
@@ -370,11 +394,11 @@ void GenerateTerrainTile(int x,int y){
 
     for (int yy = 0; yy < TSetup.yResolution; yy++){
         for (int xx = 0; xx < TSetup.xResolution; xx++) {
-            float xw = (float)xx;
-            float yw = (float)yy;
+            float xw = (float)xx + (x*TSetup.xResolution);
+            float yw = (float)yy + (y*TSetup.yResolution);
             fnlDomainWarp2D(&warp, &xw, &yw);
 
-            float n = fnlGetNoise2D(&noise, (float)xx, (float)yy);
+            float n = fnlGetNoise2D(&noise, (float)xw, (float)yw);
             n = (n + 1.0f) * 0.5f;   // normalize to [0,1]         
             // n = floorf(n * BiomeCount);
 
@@ -398,11 +422,64 @@ void GenerateTerrainTile(int x,int y){
         }
     }
 
-    ApplyBiome(BoundaryMask,influences,pixels,Heightpixels,Walkpixels);
+    //make a new tile object for cache
+    Tile* tile = malloc(sizeof(Tile));
+    tile->x=x;
+    tile->y=y;
+    // printf("init tile");
 
-    saveFile(pixels,"TextureMaps");
-    saveFile(Heightpixels,"Heightmaps");
-    saveFile(Walkpixels,"WalkMaps");
+    memset(tile->usernames, '\0', sizeof(tile->usernames));
+    snprintf(tile->usernames[4],256,username);/*middle of a 3x3*/
+
+    //find any other neighbours by looping around
+    // pthread_mutex_lock(&GlobalCache->lock);
+    for(int rows=-1;rows<2;rows++){for(int cols=-1;cols<2;cols++){
+        if(rows==0 && cols==0){continue;}
+
+        Tile* targettile=cache_get_tile(GlobalCache,x+cols,y+rows);
+        if(targettile==NULL){continue;}
+        
+        //index 4 is the owner of the tile, other indices are the owners of other tiles
+        int index=(rows+1)*3+(cols+1);
+
+        //mirror update
+        snprintf(tile->usernames[index],256,targettile->usernames[4]);
+        snprintf(targettile->usernames[8-index],256,username);
+    }   }
+    // pthread_mutex_unlock(&GlobalCache->lock);
+
+    
+
+    snprintf(tile->textures.texturemapUrl,
+        sizeof(tile->textures.texturemapUrl),
+        "../Tiles/TextureMaps/%d%d.png",
+        x, y
+    );
+    snprintf(tile->textures.heightmapUrl,
+        sizeof(tile->textures.heightmapUrl),
+        "../Tiles/HeightMaps/%d%d.png",
+        x, y
+    );
+    snprintf(tile->textures.WalkMapURL,
+        sizeof(tile->textures.WalkMapURL),
+        "../Tiles/WalkMaps/%d%d.png",
+        x, y
+    );
+
+    // printf("reached applybiome");
+    ApplyBiome(BoundaryMask,influences,pixels,Heightpixels,Walkpixels,tile,x,y);
+
+    //add to the cache the tile
+    // pthread_mutex_lock(&GlobalCache->lock);
+    // printf("adding tile to cache\n");
+    cache_insert_tile(GlobalCache,tile);
+    // pthread_mutex_unlock(&GlobalCache->lock);
+    // printf("after tile insert\n");
+
+    saveFile(pixels,"TextureMaps",x,y);
+    saveFile(Heightpixels,"Heightmaps",x,y);
+    saveFile(Walkpixels,"WalkMaps",x,y);
+    // printf("should be saving fileeee\n");
 
     free(pixels);
     free(Heightpixels);

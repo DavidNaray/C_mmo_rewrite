@@ -31,55 +31,92 @@ const pipeMsgs = net.connect("\\\\.\\pipe\\SchedulerPipeMessage");
 pipe.on("connect", () => {console.log("Connected to scheduler");});
 pipeMsgs.on("connect", () => {console.log("Ready for scheduler messages");});
 
+let pipeBuffer = "";
 pipeMsgs.on('data', (data) => {
-    const msg = JSON.parse(data.toString());
-    var accessToken;
-    var refreshToken;
-    var socketdirect;
-    try{
-        accessToken = AccessTokenImport(msg.username)
-        refreshToken = RefreshTokenImport(msg.username)
-    }catch(e){}
-    switch(msg.type){
-        case "RegisterResult":
-            var sock=usersocketMapAttempts.get(msg.RId);
-            usersocketMap.set(msg.username,sock)
-            usersocketMapAttempts.delete(msg.RId);
+    // console.log("RAW PIPE DATA:", data.toString());
+    pipeBuffer+=data.toString();
+    const lines = pipeBuffer.split("\n");
+    pipeBuffer = lines.pop();
 
-            UserRefreshTokens.set(msg.username,refreshToken);
+    for (const line of lines) {
+        if (!line.trim()) continue; // Skip empty chunks
+        try {
+            // console.log("RAW PIPE DATA (FRAMED):", line);
+            const msg = JSON.parse(line);
+            var accessToken;
+            var refreshToken;
+            var socketdirect;
 
-            socketdirect=io.sockets.sockets.get(sock);
-            socketdirect.authenticated=true;
-            socketdirect.username=msg.username;
+            var sockid;
+            try{
+                accessToken = AccessTokenImport(msg.username)
+                refreshToken = RefreshTokenImport(msg.username)
+            }catch(e){}
+            switch(msg.type){
+                case "RegisterResult":
+                    var sock=usersocketMapAttempts.get(msg.RId);
+                    usersocketMap.set(msg.username,sock)
+                    usersocketMapAttempts.delete(msg.RId);
 
-            io.to(sock).emit("redirect",{"RequestMetaData":{accessToken}});
-            break;
-        case "RegisterFail":
-            usersocketMapAttempts.delete(msg.RId);
-            io.to(sock).emit("failedReg");
-            break;
-        case "LoginResult":
-            var sock=usersocketMapAttempts.get(msg.RId);
-            usersocketMap.set(msg.username,sock)
-            usersocketMapAttempts.delete(msg.RId);
+                    UserRefreshTokens.set(msg.username,refreshToken);
 
-            UserRefreshTokens.set(msg.username,refreshToken);
+                    socketdirect=io.sockets.sockets.get(sock);
+                    socketdirect.authenticated=true;
+                    socketdirect.username=msg.username;
 
-            socketdirect=io.sockets.sockets.get(sock);
-            socketdirect.authenticated=true;
-            socketdirect.username=msg.username;
+                    io.to(sock).emit("redirect",{"RequestMetaData":{accessToken}});
+                    break;
+                case "RegisterFail":
+                    usersocketMapAttempts.delete(msg.RId);
+                    io.to(sock).emit("failedReg");
+                    break;
+                case "LoginResult":
+                    var sock=usersocketMapAttempts.get(msg.RId);
+                    usersocketMap.set(msg.username,sock)
+                    usersocketMapAttempts.delete(msg.RId);
 
-            io.to(sock).emit("redirect",{"RequestMetaData":{accessToken}});
-            break;
-        case "LoginFailed":
-            usersocketMapAttempts.delete(msg.RId);
-            io.to(sock).emit("failedLog");
-            break;
-        case "TechDetails":
-            const sockid=usersocketMap.get(msg.username)
-            // console.log(msg.details)
-            io.to(sockid).emit("TechTreeUpdate",{details:msg.details});
-        default:;
+                    UserRefreshTokens.set(msg.username,refreshToken);
+
+                    socketdirect=io.sockets.sockets.get(sock);
+                    socketdirect.authenticated=true;
+                    socketdirect.username=msg.username;
+
+                    io.to(sock).emit("redirect",{"RequestMetaData":{accessToken}});
+                    break;
+                case "LoginFailed":
+                    usersocketMapAttempts.delete(msg.RId);
+                    io.to(sock).emit("failedLog");
+                    break;
+                case "TechDetails":
+                    sockid=usersocketMap.get(msg.username)
+                    // socketdirect=io.sockets.sockets.get(usersocketMap.get(msg.username));
+                    io.to(sockid).emit("TechTreeUpdate",{details:msg.details});
+                    break;
+                case "TrainingDetails":
+                    sockid=usersocketMap.get(msg.username)
+                    io.to(sockid).emit("RegLoad",{details: msg.details});
+                    break;
+                case "NewTrainingSuccess":
+                    sockid=usersocketMap.get(msg.username)
+                    io.to(sockid).emit("NewRegimen",{slot: msg.slot,regName:msg.name});
+                    break;
+                case "TileDetails":
+                    sockid=usersocketMap.get(msg.username)
+                    io.to(sockid).emit('RecTiles',{"RequestMetaData":msg.details});
+
+                    // console.log(msg)
+
+                    const ogtile=msg.details.tiles[0];
+                    for(const username of msg.details.usernames){
+                        if(username==msg.username){continue;}
+                        sockid=usersocketMap.get(username);
+                        io.to(sockid).emit('RecTiles',{"RequestMetaData":{tiles:[ogtile]} });
+                    }
+                    break;
+                
+                default:;
+            }
+        }catch(e){console.log("parse error")}
     }
 });
 
@@ -228,25 +265,11 @@ io.on('connection', async (socket) => {
         console.log("user wants to gettiles",username)
         //push to scheduler that user needs their relevant tiles
 
-        // pipe.write(JSON.stringify({
-        //     type: "TilesRequest",
-        //     username: username,
-        // }));
+        pipe.write(JSON.stringify({
+            type: "TilesRequest",
+            username: username,
+        }));
 
-        const origintile=[0,0]
-
-        const textures={
-            texturemapUrl:"../Tiles/TextureMaps/00.png",
-            heightmapUrl:"../Tiles/HeightMaps/00.png"
-        }
-
-        const testtile={
-            x:0,y:0,
-            textures,
-        }
-
-        const tiles=[testtile] //list of tiles they should render 
-        socket.emit('RecTiles',{"RequestMetaData":{tiles,origintile}});
     })
 
 
@@ -260,7 +283,6 @@ io.on('connection', async (socket) => {
         pipe.write(JSON.stringify({
             type: "TechTreeUpdate",
             username: socket.username.toString(),
-            sockid:socket.id.toString(),
         }));
     })
 
@@ -275,18 +297,27 @@ io.on('connection', async (socket) => {
 
     socket.on('trainable',async() => {
         if(!socket.authenticated){console.log("unauthorised tile request");return;}
-        // pipe.write(JSON.stringify({
-        //     type: "TrainableUpdate",
-        //     username: socket.username,
-        //     sockid:socket.id,
-        // }));
+
+        //updates what regimens the user has in training
+        pipe.write(JSON.stringify({
+            type: "TrainableUpdate",
+            username: socket.username,
+        }));
     })
 
+    socket.on('unitTypes',async() => {
+        if(!socket.authenticated){console.log("unauthorised tile request");return;}
+
+        const types={
+            "ARCHER":{Description:"Uses a bow to eliminate foes from afar",unlocked:true},
+            "SPEARMAN":{Description:"A basic infantry unit",unlocked:true},
+            "SWORDSMAN":{Description:"a durable infantry unit",unlocked:true}
+        }
+        socket.emit("availableUnitTypes",{types})
+    })
 
     //see if they need a Daily Login reward
     // await LoginRewardCheckup(socket.userId)
-    // await TickManager.TechTreeMessage(socket.userId);
-    // await TickManager.RecruitableMessage(socket.userId);
     // await TickManager.ConstructableMessage(socket.userId);
 
     //sockets pertaining to production
@@ -313,7 +344,16 @@ io.on('connection', async (socket) => {
     //sockets pertaining to unit movement and creation
     socket.on('MovementCommand',async ({RequestMetaData}) => {});
 
-    socket.on('NewTraining',async ({RequestMetaData}) => {});
+    socket.on('NewRegimen',async ({RequestMetaData}) => {
+        if(!socket.authenticated){console.log("unauthorised tile request");return;}
+        // console.log(RequestMetaData)
+        pipe.write(JSON.stringify({
+            type: "NewRegimen",
+            username: socket.username,
+            regName:RequestMetaData,
+        }));
+
+    });
 
     socket.on('AdjustRegimen',async ({RequestMetaData}) => {});
 

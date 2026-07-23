@@ -12,7 +12,6 @@
 #include "../noiseLib/TerrainGeneration.h"
 #include "../serverComm/ReadWriteServ.h"
 
-
 void RegisterTask(void *arg){
     char msg[256];
     pthread_mutex_lock(&GlobalCache->lock);
@@ -83,15 +82,20 @@ void RegisterTask(void *arg){
         us.username,
         us.RId
     );
-    send_message(msg);
-
-    GenerateTerrainTile(0,0);
-    printf("generated terrain for user: %s\n", nu->username);
+    
 
     //add user to cache
+    
     cache_insert_user(GlobalCache, nu);
     
+    // GenerateTerrainTile(0,0,us.username);
+    
     pthread_mutex_unlock(&GlobalCache->lock);
+    GenerateTerrainTile(nu->originTile[0],nu->originTile[1],us.username);
+    printf("generated terrain for user: %s\n", nu->username);
+
+    send_message(msg);
+    
 }
 
 void LoginTask(void *arg){

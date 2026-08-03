@@ -377,7 +377,6 @@ void ApplyBiome(bool* BoundaryMask,
 }
 
 void GenerateTerrainTile(int x,int y,char* username){
-    printf("Gen for %d%d\n",x,y);
 
     pixel_t* pixels = malloc(TSetup.xResolution * TSetup.yResolution * sizeof(pixel_t));
     bool* BoundaryMask = malloc(TSetup.xResolution * TSetup.yResolution * sizeof(bool));
@@ -427,6 +426,9 @@ void GenerateTerrainTile(int x,int y,char* username){
     tile->x=x;
     tile->y=y;
     // printf("init tile");
+    tile->buildings.count = 0;
+    tile->buildings.capacity = 4;   // small initial size
+    tile->buildings.list = malloc(sizeof(Building*) * tile->buildings.capacity);
 
     memset(tile->usernames, '\0', sizeof(tile->usernames));
     snprintf(tile->usernames[4],256,username);/*middle of a 3x3*/

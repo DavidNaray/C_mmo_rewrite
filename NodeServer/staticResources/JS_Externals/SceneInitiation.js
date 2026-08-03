@@ -46,10 +46,14 @@ export function setupSocketConnection(){
     socket.on("TechTreeUpdate", (response) => {HandleTechTree(response.details)})
 
     socket.on("availableUnitTypes", (response) => {HandleUnitTypes(response.types)})
+    socket.on("availableBuildingTypes", (response) => {Handleconstructable(response.details)})
+
 
     socket.on("NewRegimen", (response) => {HandleNewRegimen(response)})
 
     socket.on("RegLoad", (response) => {HandleRegLoad(response.details.regimens)})
+
+    socket.on("buildingplacementhover", (response) => {HandleMovePlacementBuilding(response.RequestMetaData)})
 
     socket.on("TickUpdate",async (response)=>{
         const replacements=response.replacements
@@ -294,12 +298,12 @@ function HandleTechTree(TechTree){
             option.style.backgroundColor="rgba(216,216,216,0.2)"; 
         }
         To.appendChild(option)
-        makeToolTipTechnology(option,TechTree[key]);
+        makeToolTipTechnology(option,TechTree[key],key);
     }
 }
 
 function HandleUnitTypes(types){
-    function stringintoURL(str){return `Icons/${str}Icon.png`;}
+    function stringintoURL(str){return `Icons/Units/${str}.png`;}
     const To=UImanager.getTBBody();
     To.replaceChildren();
 
@@ -324,9 +328,41 @@ function HandleUnitTypes(types){
         option.addEventListener("click",UImanager.RecruitButtonClicked)
 
         To.appendChild(option)
-        makeToolTipTechnology(option,types[key]);
+        makeToolTipTechnology(option,types[key],key);
     }
 }
+
+function Handleconstructable(constructable){
+    function stringintoURL(str){return `Icons/Buildings/${str}.png`;}
+    console.log(constructable)
+    const To=UImanager.getCBody()
+    To.replaceChildren();
+
+    for (const [key, value] of Object.entries(constructable)) {
+        const strURL=stringintoURL(key);
+
+        let option=document.createElement("img");
+        option.style.width="100%"
+        option.style.height="100%"
+        option.src=strURL;
+        option.style.objectFit="contain"
+        option.style.display="block"
+        option.style.aspectRatio="1/1"
+
+
+        if(value.unlocked){
+            option.style.outline="lightgray dashed 0.1vw"; 
+            option.style.backgroundColor="rgba(216,216,216,0.2)"; 
+        }
+        
+        option.myParam=key
+        option.addEventListener("click",UImanager.BuildingRequest)
+
+        To.appendChild(option)
+        makeToolTipTechnology(option,value,key);
+    }
+}
+
 
 
 function HandleRegLoad(regimens){for (const reg of regimens) {HandleNewRegimen(reg);}}
@@ -565,30 +601,8 @@ function HandleDelRegimen(HandleDelRegimen){
 }
 
 
-function Handleconstructable(constructable){
-    const To=UImanager.getCBody()
-    To.replaceChildren();
-
-    for(let [RType,strURLGlb] of Object.entries(constructable)){
-        let option=document.createElement("img");
-        option.style.width="100%"
-        option.style.height="100%"
-        option.src=strURLGlb[0];
-        option.style.objectFit="contain"
-        option.style.display="block"
-        option.style.aspectRatio="1/1"
-        option.style.outline="rgb(188, 187, 187) dashed 0.1vw"; 
-        option.style.backgroundColor="rgba(216,216,216,0.2)"; 
-
-        option.myParam=strURLGlb[1]
-
-        option.addEventListener("click",UImanager.BuildingRequest)
-        To.appendChild(option)
-    }
-}
-
-
 function HandleMovePlacementBuilding(MovePlacementBuilding){
+    // console.log("MovePlacementBuilding",MovePlacementBuilding)
 
     function colourchange(objectDef,colour){
         // console.log("REALLY",colour)
@@ -625,11 +639,15 @@ function HandleMovePlacementBuilding(MovePlacementBuilding){
     }
 
 
-    const building=MovePlacementBuilding.buildingToMove
-    const [px,py]=MovePlacementBuilding.pixelPoint
-    const [chunkX,chunkY]=MovePlacementBuilding.ChunkPlaced
-    const valid=MovePlacementBuilding.valid
-    
+    const building=MovePlacementBuilding.building
+    const px=MovePlacementBuilding.px
+    const py=MovePlacementBuilding.py
+    const chunkX=MovePlacementBuilding.cx
+    const chunkY=MovePlacementBuilding.cy
+    const valid=MovePlacementBuilding.permission
+
+    InputManager.sethovertaskId(MovePlacementBuilding.id)
+    // console.log(px,py,chunkX,chunkY)
     //get target object details
     let Asset=InputManager.getPlacementBuilding()
     if(!Asset){
@@ -642,10 +660,10 @@ function HandleMovePlacementBuilding(MovePlacementBuilding){
     }
 
     //move the asset to the desired location on the clients coordinate system
-    const xyz=superHeightMapTexture.getXYZ(chunkX,chunkY,MovePlacementBuilding.pixelPoint)
-    const threePos=new THREE.Vector3(chunkX*7.5 + px/(1536/7.5) - 3.75 ,xyz[1],chunkY*7.5 + py/(1536/7.5) -3.75)
+    const xyz=superHeightMapTexture.getXYZ(chunkX,chunkY,[px,py])
+    const threePos=new THREE.Vector3(chunkX*7.5 + px/(512/7.5) - 3.75 ,xyz[1],chunkY*7.5 + py/(512/7.5) -3.75)
     Asset.position.copy(threePos)
-       
+    // console.log("threePos",threePos)
     if(scene.getObjectById(Asset.id) === undefined){scene.add(Asset)}
 
     //depending on valid, change the colour of the object

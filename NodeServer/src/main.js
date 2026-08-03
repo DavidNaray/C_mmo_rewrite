@@ -92,6 +92,12 @@ pipeMsgs.on('data', (data) => {
                     // socketdirect=io.sockets.sockets.get(usersocketMap.get(msg.username));
                     io.to(sockid).emit("TechTreeUpdate",{details:msg.details});
                     break;
+                case "ConstructionOptions":
+                    sockid=usersocketMap.get(msg.username)
+                    // console.log(msg.details)
+                    // socketdirect=io.sockets.sockets.get(usersocketMap.get(msg.username));
+                    io.to(sockid).emit("availableBuildingTypes",{details:msg.details});
+                    break;
                 case "TrainingDetails":
                     sockid=usersocketMap.get(msg.username)
                     io.to(sockid).emit("RegLoad",{details: msg.details});
@@ -104,8 +110,6 @@ pipeMsgs.on('data', (data) => {
                     sockid=usersocketMap.get(msg.username)
                     io.to(sockid).emit('RecTiles',{"RequestMetaData":msg.details});
 
-                    // console.log(msg)
-
                     const ogtile=msg.details.tiles[0];
                     for(const username of msg.details.usernames){
                         if(username==msg.username){continue;}
@@ -113,7 +117,12 @@ pipeMsgs.on('data', (data) => {
                         io.to(sockid).emit('RecTiles',{"RequestMetaData":{tiles:[ogtile]} });
                     }
                     break;
-                
+                case "PlacementMovement":
+                    sockid=usersocketMap.get(msg.username)
+                    // console.log(msg)
+                    io.to(sockid).emit('buildingplacementhover',{"RequestMetaData":msg});
+
+                    break;
                 default:;
             }
         }catch(e){console.log("parse error")}
@@ -239,7 +248,7 @@ io.on('connection', async (socket) => {
             RId:requestId.toString(),
             username: username,
             password: password,
-        }));
+        }) + "\n");
         usersocketMapAttempts.set(requestId,socket.id);
         requestId++;
     });
@@ -253,7 +262,7 @@ io.on('connection', async (socket) => {
             RId:requestId.toString(),
             username: username,
             password: password,
-        }));
+        }) + "\n");
         usersocketMapAttempts.set(requestId,socket.id);
         requestId++;
     });
@@ -268,7 +277,7 @@ io.on('connection', async (socket) => {
         pipe.write(JSON.stringify({
             type: "TilesRequest",
             username: username,
-        }));
+        }) + "\n");
 
     })
 
@@ -283,16 +292,16 @@ io.on('connection', async (socket) => {
         pipe.write(JSON.stringify({
             type: "TechTreeUpdate",
             username: socket.username.toString(),
-        }));
+        }) + "\n");
     })
 
     socket.on('constructable',async() => {
         if(!socket.authenticated){console.log("unauthorised tile request");return;}
-        // pipe.write(JSON.stringify({
-        //     type: "ConstructableUpdate",
-        //     username: socket.username,
-        //     sockid:socket.id,
-        // }));
+        // console.log("yeah i do want my constructables?")
+        pipe.write(JSON.stringify({
+            type: "ConstructableUpdate",
+            username: socket.username,
+        }) + "\n");
     })
 
     socket.on('trainable',async() => {
@@ -302,7 +311,7 @@ io.on('connection', async (socket) => {
         pipe.write(JSON.stringify({
             type: "TrainableUpdate",
             username: socket.username,
-        }));
+        }) + "\n");
     })
 
     socket.on('unitTypes',async() => {
@@ -336,7 +345,17 @@ io.on('connection', async (socket) => {
 
     
     //---------------------------------------------------
-    socket.on('BuildingPlacementMovement',async ({RequestMetaData}) =>{});
+    socket.on('BuildingPlacementMovement',async ({RequestMetaData}) =>{
+        if(!socket.authenticated){console.log("unauthorised tile request");return;}
+        // console.log("BuildingPlacementMovement",RequestMetaData)
+        pipe.write(JSON.stringify({
+            type: "PlacementMovement",
+            username: socket.username,
+            building:RequestMetaData.Building,
+            position:RequestMetaData.pos,
+            taskId:RequestMetaData.tId
+        }) + "\n");
+    });
 
     socket.on('BuildingPlacement',async ({RequestMetaData}) =>{})
 

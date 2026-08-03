@@ -174,7 +174,7 @@ export function MakeToolTips(){
 
 }
 
-export function makeToolTipTechnology(element,tipInfo){
+export function makeToolTipTechnology(element,tipInfo,name){
     const tooltip = document.createElement('div');
     tooltip.className = 'resource-tooltip';
     document.body.appendChild(tooltip);
@@ -183,6 +183,7 @@ export function makeToolTipTechnology(element,tipInfo){
         // console.log("Making tooltip for technology: ", tipInfo);
         const hasNoChildNodes=!tooltip.hasChildNodes()
         if(hasNoChildNodes){
+            GeneralToolTipTitleDiv(`Name:${name}`,tooltip);
             GeneralToolTipTitleDiv(`Unlocked:${tipInfo.unlocked}`,tooltip);
             GeneralToolTipTitleDiv(`${tipInfo.Description}`,tooltip);
         }

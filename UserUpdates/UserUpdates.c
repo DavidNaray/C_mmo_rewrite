@@ -2,6 +2,7 @@
 
 #include "../MongoDBReadWriteCache/Cache.h"
 #include "../MongoDBReadWriteCache/Schema/UserBreakdown.h"
+#include "../MongoDBReadWriteCache/Schema/TileSchema.h"
 #include "../MongoDBReadWriteCache/ReadUser.h"
 #include "../MongoDBReadWriteCache/UserUtils.h"
 #include "../MongoDBReadWriteCache/Cache.h"
@@ -32,35 +33,11 @@ static cJSON* technologies_to_json(const Technologies* T){
     cJSON_AddItemToObject(root, "Shields", tech_to_json(&T->Shields));
     cJSON_AddItemToObject(root, "Spears", tech_to_json(&T->Spears));
     cJSON_AddItemToObject(root, "LeatherArmour", tech_to_json(&T->LeatherArmour));
-    cJSON_AddItemToObject(root, "BatteringRam", tech_to_json(&T->BatteringRam));
-    cJSON_AddItemToObject(root, "WagonFort", tech_to_json(&T->WagonFort));
-    cJSON_AddItemToObject(root, "WoodWall", tech_to_json(&T->WoodWall));
-    cJSON_AddItemToObject(root, "StoneWall", tech_to_json(&T->StoneWall));
-    cJSON_AddItemToObject(root, "WoodGate", tech_to_json(&T->WoodGate));
-    cJSON_AddItemToObject(root, "StoneGate", tech_to_json(&T->StoneGate));
-    cJSON_AddItemToObject(root, "WoodenTower", tech_to_json(&T->WoodenTower));
-    cJSON_AddItemToObject(root, "StoneTower", tech_to_json(&T->StoneTower));
-    cJSON_AddItemToObject(root, "WoodenKeep", tech_to_json(&T->WoodenKeep));
-    cJSON_AddItemToObject(root, "StoneKeep", tech_to_json(&T->StoneKeep));
-    cJSON_AddItemToObject(root, "WoodHouse", tech_to_json(&T->WoodHouse));
-    cJSON_AddItemToObject(root, "StoneHouse", tech_to_json(&T->StoneHouse));
     cJSON_AddItemToObject(root, "Pavement", tech_to_json(&T->Pavement));
-
-    cJSON_AddItemToObject(root, "CivilianFactory", tech_to_json(&T->CivilianFactory));
-    cJSON_AddItemToObject(root, "MilitaryFactory", tech_to_json(&T->MilitaryFactory));
-    cJSON_AddItemToObject(root, "Farm", tech_to_json(&T->Farm));
-    cJSON_AddItemToObject(root, "Quarry", tech_to_json(&T->Quarry));
-    cJSON_AddItemToObject(root, "LumberMill", tech_to_json(&T->LumberMill));
-    cJSON_AddItemToObject(root, "Barracks", tech_to_json(&T->Barracks));
-    cJSON_AddItemToObject(root, "Market", tech_to_json(&T->Market));
-    cJSON_AddItemToObject(root, "TownHall", tech_to_json(&T->TownHall));
-    cJSON_AddItemToObject(root, "Warehouse", tech_to_json(&T->Warehouse));
 
     cJSON_AddItemToObject(root, "ChainArmour", tech_to_json(&T->ChainArmour));
     cJSON_AddItemToObject(root, "PlateArmour", tech_to_json(&T->PlateArmour));
     cJSON_AddItemToObject(root, "Crossbows", tech_to_json(&T->Crossbows));
-    cJSON_AddItemToObject(root, "Trebuchet", tech_to_json(&T->Trebuchet));
-    cJSON_AddItemToObject(root, "Catapult", tech_to_json(&T->Catapult));
     cJSON_AddItemToObject(root, "Ballista", tech_to_json(&T->Ballista));
 
     cJSON_AddItemToObject(root, "StandardisedParts", tech_to_json(&T->StandardisedParts));
@@ -410,9 +387,222 @@ void GetUserTiles(void *arg){
 }
 
 
+
+static cJSON* Buildings_to_json(const BuildingsTypes* T){
+    cJSON* root = cJSON_CreateObject();
+
+    cJSON_AddItemToObject(root, "Barracks", tech_to_json(&T->Barracks));
+    cJSON_AddItemToObject(root, "Factory", tech_to_json(&T->Factory));
+    cJSON_AddItemToObject(root, "Farm", tech_to_json(&T->Farm));
+    cJSON_AddItemToObject(root, "LumberMill", tech_to_json(&T->LumberMill));
+    cJSON_AddItemToObject(root, "Market", tech_to_json(&T->Market));
+    cJSON_AddItemToObject(root, "Quarry", tech_to_json(&T->Quarry));
+    cJSON_AddItemToObject(root, "StoneGate", tech_to_json(&T->StoneGate));
+    cJSON_AddItemToObject(root, "StoneHouse", tech_to_json(&T->StoneHouse));
+    cJSON_AddItemToObject(root, "StoneKeep", tech_to_json(&T->StoneKeep));
+    cJSON_AddItemToObject(root, "StoneTower", tech_to_json(&T->StoneTower));
+
+    cJSON_AddItemToObject(root, "StoneWall", tech_to_json(&T->StoneWall));
+
+    cJSON_AddItemToObject(root, "TownHall", tech_to_json(&T->TownHall));
+    cJSON_AddItemToObject(root, "warehouse", tech_to_json(&T->warehouse));
+    cJSON_AddItemToObject(root, "WoodenKeep", tech_to_json(&T->WoodenKeep));
+    cJSON_AddItemToObject(root, "WoodenTower", tech_to_json(&T->WoodenTower));
+
+    cJSON_AddItemToObject(root, "WoodGate", tech_to_json(&T->WoodGate));
+    cJSON_AddItemToObject(root, "WoodHouse", tech_to_json(&T->WoodHouse));
+    cJSON_AddItemToObject(root, "WoodWall", tech_to_json(&T->WoodWall));
+
+    return root;
+}
+
 void ConstructionUpdateTask(void *arg){
-    
+    printf("huh construct \n");
     UUpdate us=*(UUpdate *) arg;
+    pthread_mutex_lock(&GlobalCache->lock);
+
+    User* u=cache_get_user(GlobalCache,us.username);
+
+    pthread_mutex_unlock(&GlobalCache->lock);
+
+    char header[256];
+    int header_len = snprintf(
+        header, sizeof(header),
+        "{\"type\":\"ConstructionOptions\",\"username\":\"%s\",\"details\":",
+        us.username
+    );
+    
+    cJSON* Build_json = Buildings_to_json(&u->Buildings);
+    char* build_str  = cJSON_PrintUnformatted(Build_json);
+
+    size_t build_len = strlen(build_str);
+    size_t total_len = header_len + build_len + 2;
+    
+    char* final = malloc(total_len);
+    memcpy(final, header, header_len);
+    memcpy(final + header_len, build_str, build_len);
+    final[header_len + build_len] = '}';
+    final[header_len + build_len + 1] = '\0';
+
+    send_message(final);
+    
+    free(build_str);
+    free(final);
     free(arg);
+    cJSON_Delete(Build_json);
+
+}
+
+
+static Building BuildingTemplates[BUILDING_MAX] = {
+    //x,y,width,height,health,maxhealth
+    //popcapincrease, isCityCenter, providesProduction,storage,defensebonus
+    //enum
+
+    {   {0, 0, 5, 5, 100, 100},{0, false, false, 0,0},Barracks},
+    {   {0, 0, 10, 10, 100, 100},{0, false, true, 0,0},Factory},
+    {   {0, 0, 3, 3, 100, 100},{0, false, false, 0,0},Farm},
+    {   {0, 0, 3, 3, 100, 100},{0, false, false, 0,0},LumberMill},
+
+    {   {0, 0, 10, 10, 100, 100},{0, false, false, 0,0},Market},
+    {   {0, 0, 5, 5, 100, 100},{0, false, false, 0,0},Quarry},
+    {   {0, 0, 5, 3, 100, 100},{0, false, false, 0,0},StoneGate},
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},StoneHouse},
+
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},StoneKeep},
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},StoneTower},
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},StoneWall},
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},TownHall},
+
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},warehouse},
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},WoodenKeep},
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},WoodenTower},
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},WoodGate},
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},WoodHouse},
+    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},WoodWall},
+    // user-defined templates will be loaded here later
+};
+
+BuildingType bTypeFromString(const char *s) {
+    if (strcmp(s, "Barracks") == 0) return Barracks;
+    if (strcmp(s, "Factory") == 0) return Factory;
+    if (strcmp(s, "Farm") == 0) return Farm;
+    if (strcmp(s, "LumberMill") == 0) return LumberMill;
+    if (strcmp(s, "Market") == 0) return Market;
+    if (strcmp(s, "Quarry") == 0) return Quarry;
+    if (strcmp(s, "StoneGate") == 0) return StoneGate;
+    if (strcmp(s, "StoneHouse") == 0) return StoneHouse;
+    if (strcmp(s, "StoneKeep") == 0) return StoneKeep;
+    if (strcmp(s, "StoneTower") == 0) return StoneTower;
+    if (strcmp(s, "StoneWall") == 0) return StoneWall;
+    if (strcmp(s, "TownHall") == 0) return TownHall;
+    if (strcmp(s, "warehouse") == 0) return warehouse;
+    if (strcmp(s, "WoodenKeep") == 0) return WoodenKeep;
+    if (strcmp(s, "WoodenTower") == 0) return WoodenTower;
+    if (strcmp(s, "WoodGate") == 0) return WoodGate;
+    if (strcmp(s, "WoodHouse") == 0) return WoodHouse;
+    if (strcmp(s, "WoodWall") == 0) return WoodWall;
+
+    return BUILDING_MAX; // invalid
+}
+
+bool canplacebuilding(WalkMapPoint buffer[512][512], Building template,int xp,int yp){
+
+    //building width and height
+    int bw = template.base.width;
+    int bh = template.base.height;
+
+    //bounds
+    int left   = xp - bw/2;
+    int right  = xp + bw/2;
+    int top    = yp - bh/2;
+    int bottom = yp + bh/2;
+    if (left < 0 || right >= 512 || top < 0 || bottom >= 512){return false;}
+
+    for (int y = top; y <= bottom; y++) {
+        for (int x = left; x <= right; x++) {
+            WalkMapPoint *cell = &buffer[y][x];
+            if (!cell->walkability){return false;}
+            if (cell->object != NULL){return false;}
+    }   }
+
+
+
+    return true;
+}
+
+void BuildingPosUpdateTask(void *arg){
+
+    //you have the username and pos
+    //you can get the chunk it belongs to by its offset to the users origin tile
+
+    //tiles are 7.5 tiles across, centered on the origin so so thats +3.75 since its moved left
+        //in other words seeing 0,0,0 is actually 3.75,0,3.75
+
+    //the -0.00001f is to prevent a bug since the edges are shifted so 3.75 turns to 7.5 meaning /7.5=1
+        //but this means the exact right edge of tile 0 shifts into tile 1, which will cause problems
+
+    BuildPlacement us=*(BuildPlacement *) arg;
+    
+    pthread_mutex_lock(&GlobalCache->lock);
+    User* u=cache_get_user(GlobalCache,us.username);
+
+    double pixelsPerUnit = 512.0 / 7.5;   // ≈ 68.2666667
+    double px = (us.position[0]+3.75f) * pixelsPerUnit;
+    double py = (us.position[2]+3.75f) * pixelsPerUnit;
+
+    int pxf=(int)px;
+    int pyf=(int)py;
+    // printf("%d,%d\n",pxf,pyf);
+
+    double xchunk=pxf/512.0;//(us.position[0] + 3.75f - 0.00001f) / 7.5f;
+    double ychunk=pyf/512.0;//(us.position[2] + 3.75f - 0.00001f) / 7.5f;
+
+    int xfloored=(int)xchunk;
+    int yfloored=(int)ychunk;
+
+    int tilepixelx=pxf - 512*xfloored;
+    int tilepixely=pyf - 512*yfloored;
+    // printf("%d,%d\n",xfloored,yfloored);
+    Tile* focusTile = cache_get_tile(GlobalCache, xfloored, yfloored);
+    pthread_mutex_unlock(&GlobalCache->lock);
+
+    //get the info for the appropriate building
+    //and buffer for the tile
+    //get the pixel positions
+
+    // int xPixel=(xchunk - xfloored);
+    // int yPixel=(ychunk - yfloored);
+
+    bool permission=canplacebuilding(
+        focusTile->Buffer,
+        BuildingTemplates[bTypeFromString(us.buildingname)],
+        tilepixelx,tilepixely
+    );
+
+    printf("commed the id %s\n",us.taskId);
+    char msg[256];
+    snprintf(
+        msg, sizeof(msg),
+        "{\"type\":\"PlacementMovement\","
+        "\"username\":\"%s\","
+        "\"permission\":%d,"
+        "\"id\":\"%s\","
+        "\"px\":%d,"
+        "\"py\":%d,"
+        "\"cx\":%d,"
+        "\"cy\":%d,"
+        "\"building\":\"%s\"}",
+        us.username,
+        permission,
+        us.taskId,
+        tilepixelx,
+        tilepixely,
+        xfloored,
+        yfloored,
+        us.buildingname
+    );
+
+    send_message(msg);
 
 }

@@ -27,6 +27,7 @@ export class RendererUserInputState{
         this.PlacementMode=false
 
         this.placementBuilding;
+        this.hovertaskId="";
         /*---------------UI-game---------------*/
         //raycaster
         this.raycaster = new THREE.Raycaster();
@@ -53,6 +54,8 @@ export class RendererUserInputState{
 
         this.SelectedItems=[];//what has the user selected
     }
+
+    sethovertaskId(val){this.hovertaskId=val}
 
     getPlacementBuilding(){return this.placementBuilding}
     setPlacementBuilding(obj){this.placementBuilding=obj}
@@ -253,7 +256,7 @@ export class RendererUserInputState{
             //server responds with yes/no and position which will change the buildings colour and position
             if(position){
                 // console.log("position?",position)
-                const RequestMetaData={pos:position,Building:this.PlacementMode.whichBuilding}
+                const RequestMetaData={pos:position,Building:this.PlacementMode.whichBuilding,tId:this.hovertaskId}
                 socket.emit('BuildingPlacementMovement',{RequestMetaData})
             }
         }

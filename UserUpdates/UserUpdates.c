@@ -111,10 +111,6 @@ static cJSON *TrainingList_to_json(const RegimenTrainingList *TL){
         cJSON_AddItemToArray(tile, cJSON_CreateNumber(r->deployTile[0]));
         cJSON_AddItemToArray(tile, cJSON_CreateNumber(r->deployTile[1]));
 
-        cJSON *pixel = cJSON_AddArrayToObject(reg, "deployPixel");
-        cJSON_AddItemToArray(pixel, cJSON_CreateNumber(r->deployPixel[0]));
-        cJSON_AddItemToArray(pixel, cJSON_CreateNumber(r->deployPixel[1]));
-
 
 
         cJSON *units = cJSON_AddObjectToObject(reg, "units");
@@ -318,7 +314,6 @@ void GetUserTiles(void *arg){
     User* u=cache_get_user(GlobalCache,us.username);
     pthread_mutex_unlock(&GlobalCache->lock);
 
-    // printf("user deets:%d,%d \n",u->originTile[0], u->originTile[1]);
     printf("LOOKUP KEY = '%d,%d'\n", u->originTile[0], u->originTile[1]);
     Tile* focusTile = NULL;
     for (int i = 0; i < 100; i++) {   // retry up to 100 times
@@ -454,60 +449,30 @@ void ConstructionUpdateTask(void *arg){
 }
 
 
-static Building BuildingTemplates[BUILDING_MAX] = {
-    //x,y,width,height,health,maxhealth
-    //popcapincrease, isCityCenter, providesProduction,storage,defensebonus
-    //enum
+// BuildingType bTypeFromString(const char *s) {
+//     if (strcmp(s, "Barracks") == 0) return Barracks;
+//     if (strcmp(s, "Factory") == 0) return Factory;
+//     if (strcmp(s, "Farm") == 0) return Farm;
+//     if (strcmp(s, "LumberMill") == 0) return LumberMill;
+//     if (strcmp(s, "Market") == 0) return Market;
+//     if (strcmp(s, "Quarry") == 0) return Quarry;
+//     if (strcmp(s, "StoneGate") == 0) return StoneGate;
+//     if (strcmp(s, "StoneHouse") == 0) return StoneHouse;
+//     if (strcmp(s, "StoneKeep") == 0) return StoneKeep;
+//     if (strcmp(s, "StoneTower") == 0) return StoneTower;
+//     if (strcmp(s, "StoneWall") == 0) return StoneWall;
+//     if (strcmp(s, "TownHall") == 0) return TownHall;
+//     if (strcmp(s, "warehouse") == 0) return warehouse;
+//     if (strcmp(s, "WoodenKeep") == 0) return WoodenKeep;
+//     if (strcmp(s, "WoodenTower") == 0) return WoodenTower;
+//     if (strcmp(s, "WoodGate") == 0) return WoodGate;
+//     if (strcmp(s, "WoodHouse") == 0) return WoodHouse;
+//     if (strcmp(s, "WoodWall") == 0) return WoodWall;
 
-    {   {0, 0, 5, 5, 100, 100},{0, false, false, 0,0},Barracks},
-    {   {0, 0, 10, 10, 100, 100},{0, false, true, 0,0},Factory},
-    {   {0, 0, 3, 3, 100, 100},{0, false, false, 0,0},Farm},
-    {   {0, 0, 3, 3, 100, 100},{0, false, false, 0,0},LumberMill},
-
-    {   {0, 0, 10, 10, 100, 100},{0, false, false, 0,0},Market},
-    {   {0, 0, 5, 5, 100, 100},{0, false, false, 0,0},Quarry},
-    {   {0, 0, 5, 3, 100, 100},{0, false, false, 0,0},StoneGate},
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},StoneHouse},
-
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},StoneKeep},
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},StoneTower},
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},StoneWall},
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},TownHall},
-
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},warehouse},
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},WoodenKeep},
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},WoodenTower},
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},WoodGate},
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},WoodHouse},
-    {   {0, 0, 5, 5, 100, 100},{5, false, false, 0,0},WoodWall},
-    // user-defined templates will be loaded here later
-};
-
-BuildingType bTypeFromString(const char *s) {
-    if (strcmp(s, "Barracks") == 0) return Barracks;
-    if (strcmp(s, "Factory") == 0) return Factory;
-    if (strcmp(s, "Farm") == 0) return Farm;
-    if (strcmp(s, "LumberMill") == 0) return LumberMill;
-    if (strcmp(s, "Market") == 0) return Market;
-    if (strcmp(s, "Quarry") == 0) return Quarry;
-    if (strcmp(s, "StoneGate") == 0) return StoneGate;
-    if (strcmp(s, "StoneHouse") == 0) return StoneHouse;
-    if (strcmp(s, "StoneKeep") == 0) return StoneKeep;
-    if (strcmp(s, "StoneTower") == 0) return StoneTower;
-    if (strcmp(s, "StoneWall") == 0) return StoneWall;
-    if (strcmp(s, "TownHall") == 0) return TownHall;
-    if (strcmp(s, "warehouse") == 0) return warehouse;
-    if (strcmp(s, "WoodenKeep") == 0) return WoodenKeep;
-    if (strcmp(s, "WoodenTower") == 0) return WoodenTower;
-    if (strcmp(s, "WoodGate") == 0) return WoodGate;
-    if (strcmp(s, "WoodHouse") == 0) return WoodHouse;
-    if (strcmp(s, "WoodWall") == 0) return WoodWall;
-
-    return BUILDING_MAX; // invalid
-}
+//     return BUILDING_MAX; // invalid
+// }
 
 bool canplacebuilding(WalkMapPoint buffer[512][512], Building template,int xp,int yp){
-
     //building width and height
     int bw = template.base.width;
     int bh = template.base.height;
@@ -525,8 +490,6 @@ bool canplacebuilding(WalkMapPoint buffer[512][512], Building template,int xp,in
             if (!cell->walkability){return false;}
             if (cell->object != NULL){return false;}
     }   }
-
-
 
     return true;
 }
@@ -605,4 +568,118 @@ void BuildingPosUpdateTask(void *arg){
 
     send_message(msg);
 
+}
+
+int get_unique_usernames(char usernames[9][256], char out[9][256]) {
+    int count = 0;
+
+    for (int i = 0; i < 9; i++) {
+        if (usernames[i][0] == '\0') continue;  // skip empty
+
+        // check if already added
+        bool exists = false;
+        for (int j = 0; j < count; j++) {
+            if (strcmp(out[j], usernames[i]) == 0) {
+                exists = true;
+                break;
+            }
+        }
+
+        if (!exists) {
+            strcpy(out[count], usernames[i]);
+            count++;
+        }
+    }
+
+    return count;
+}
+
+
+void BuildingPlaceTask(void *arg){
+    BuildPlacement us=*(BuildPlacement *) arg;
+    
+    pthread_mutex_lock(&GlobalCache->lock);
+    User* u=cache_get_user(GlobalCache,us.username);
+
+    double pixelsPerUnit = 512.0 / 7.5;   // ≈ 68.2666667
+    double px = (us.position[0]+3.75f) * pixelsPerUnit;
+    double py = (us.position[2]+3.75f) * pixelsPerUnit;
+
+    int pxf=(int)px;
+    int pyf=(int)py;
+
+    double xchunk=pxf/512.0;
+    double ychunk=pyf/512.0;
+
+    int xfloored=(int)xchunk;
+    int yfloored=(int)ychunk;
+
+    int tilepixelx=pxf - 512*xfloored;
+    int tilepixely=pyf - 512*yfloored;
+
+    Tile* focusTile = cache_get_tile(GlobalCache, xfloored, yfloored);
+
+    bool enoughRoom=canplacebuilding(
+        focusTile->Buffer,
+        BuildingTemplates[bTypeFromString(us.buildingname)],
+        tilepixelx,tilepixely
+    );
+    // printf("hello");
+
+    //add the building to the tile
+    if(enoughRoom){
+        cache_addbuilding_tile(focusTile,
+            tilepixelx,
+            tilepixely,
+            BuildingTemplates[bTypeFromString(us.buildingname)]
+        );
+    }
+    int count=focusTile->buildings.count;
+    int ServerId=focusTile->buildings.list[count-1]->base.ServerId;
+    printf("%d\n",ServerId);
+    pthread_mutex_unlock(&GlobalCache->lock);
+
+    //message the all users observing the tile
+    char uniquenames[9][256];
+    int uniquecount=get_unique_usernames(focusTile->usernames,uniquenames);
+
+    char informPart[512];
+    informPart[0] = '\0';  // start empty
+    strcat(informPart, "\"inform\":[");
+    for (int u = 0; u < uniquecount; u++) {
+        strcat(informPart, "\"");
+        strcat(informPart, uniquenames[u]);
+        strcat(informPart, "\"");
+        if (u < uniquecount - 1) strcat(informPart, ",");
+    }
+    strcat(informPart, "]");
+
+    char detailsPart[512];
+    snprintf(
+        detailsPart, sizeof(detailsPart),
+        "\"details\":{"
+            "\"px\":%d,"
+            "\"py\":%d,"
+            "\"cx\":%d,"
+            "\"cy\":%d,"
+            "\"ServerId\":%d,"
+            "\"building\":\"%s\""
+        "}",
+        tilepixelx,
+        tilepixely,
+        xfloored,
+        yfloored,
+        ServerId,
+        us.buildingname
+    );
+
+    char msg[1024];
+    snprintf(
+        msg, sizeof(msg),
+        "{\"type\":\"BuildingPlaced\",%s,%s}",
+        informPart,
+        detailsPart
+    );
+
+    send_message(msg);
 }

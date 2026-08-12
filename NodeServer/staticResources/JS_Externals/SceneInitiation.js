@@ -28,6 +28,7 @@ export function resumesession(){
     const username = localStorage.getItem("username");
     socket.emit("ResumeSession", { RequestMetaData: {token,username} });
 }
+
 export function setupSocketConnection(){
     console.log("setupSocketConnection");
     socket = io();
@@ -55,6 +56,12 @@ export function setupSocketConnection(){
 
     socket.on("buildingplacementhover", (response) => {HandleMovePlacementBuilding(response.RequestMetaData)})
 
+    socket.on("BuildingPlaced", async (response) => { await HandlePlaceBuilding(response)})
+
+    socket.on("BuildingUpdate", async (response) => {HandleBuildingUpdate(response) })
+
+    socket.on("BuildOperational", async (response) => {HandleBuildingShaderChange(response)})
+
     socket.on("TickUpdate",async (response)=>{
         const replacements=response.replacements
         const positions=response.positions
@@ -68,9 +75,6 @@ export function setupSocketConnection(){
         const DelRegimen=response.DelRegimen
 
         const constructable=response.Constructable
-
-        const MovePlacementBuilding=response.MovePlacementBuilding
-        const PlaceBuilding=response.PlaceBuilding
 
         //move units across chunks
         if(replacements){await HandleUnitReplacements(replacements)}
@@ -96,9 +100,6 @@ export function setupSocketConnection(){
 
         if(DelRegimen){HandleDelRegimen(DelRegimen)}
 
-        if(MovePlacementBuilding){HandleMovePlacementBuilding(MovePlacementBuilding)}
-
-        if(PlaceBuilding){HandlePlaceBuilding(PlaceBuilding)}
     })
     
     socket.on("redirect",async (response)=>{
@@ -126,7 +127,6 @@ export function setupSocketConnection(){
         }
 
         for (const TileData of response.RequestMetaData.tiles) {
-            // console.log("TileData",TileData)
             await globalmanager.CreateTile(TileData)
         }
 
@@ -368,7 +368,7 @@ function Handleconstructable(constructable){
 function HandleRegLoad(regimens){for (const reg of regimens) {HandleNewRegimen(reg);}}
 
 function HandleNewRegimen(NewRegimen){
-    function stringintoURL(str){return `Icons/${str}Icon.png`;}
+    function stringintoURL(str){return `Icons/Units/${str}.png`;}
     function TopSec(elem){
         
         let Imgsec=document.createElement("img");
@@ -602,7 +602,8 @@ function HandleDelRegimen(HandleDelRegimen){
 
 
 function HandleMovePlacementBuilding(MovePlacementBuilding){
-    // console.log("MovePlacementBuilding",MovePlacementBuilding)
+
+    if(!InputManager.PlacementMode){return}//final line of defense again residual / accidental call
 
     function colourchange(objectDef,colour){
         // console.log("REALLY",colour)
@@ -618,7 +619,9 @@ function HandleMovePlacementBuilding(MovePlacementBuilding){
                 materials.forEach((mat) => {
                     mat.transparent = true; // enable opacity
                     mat.opacity = 0.5;           // adjust to desired see-through
-                    mat.customProgramCacheKey = () => colour;
+                    // mat.customProgramCacheKey = () => colour;
+                    mat.customProgramCacheKey = () => Math.random().toString();
+
                     mat.onBeforeCompile = (shader) => {
                         shader.fragmentShader = shader.fragmentShader.replace(
                             '#include <map_fragment>',
@@ -638,7 +641,6 @@ function HandleMovePlacementBuilding(MovePlacementBuilding){
         });
     }
 
-
     const building=MovePlacementBuilding.building
     const px=MovePlacementBuilding.px
     const py=MovePlacementBuilding.py
@@ -653,8 +655,14 @@ function HandleMovePlacementBuilding(MovePlacementBuilding){
     if(!Asset){
         const Assetdetails=globalmanager.getAsset(building)
         if(!Assetdetails){return};
-        Asset = new THREE.Mesh(Assetdetails.geometry, Assetdetails.materials);
-        Asset.scale.set(0.2,0.2,0.2);
+
+        const geom = Assetdetails.geometry.clone();
+        const mats = Assetdetails.materials.map(m => m.clone());
+        Asset = new THREE.Mesh(geom, mats);
+        Asset.scale.set(0.2, 0.2, 0.2);
+
+        // Asset = new THREE.Mesh(Assetdetails.geometry, Assetdetails.materials);
+        // Asset.scale.set(0.2,0.2,0.2);
         InputManager.setPlacementBuilding(Asset)
         scene.add(Asset);
     }
@@ -671,30 +679,55 @@ function HandleMovePlacementBuilding(MovePlacementBuilding){
     else{colourchange(Asset,"red")}
 }
 
-async function HandlePlaceBuilding(PlaceBuilding){
+async function HandlePlaceBuilding(Building){
 
-    for(let Building of PlaceBuilding){    
-        const [nchunkX,nchunkY]=Building.ChunkPlaced
-        const LoadTo=globalmanager.getTile(nchunkX,nchunkY)
-
-        if(LoadTo){
-            const Meta={
-                "position":Building.pixelPoint,//in pixel values for the chunk its to be deployed in!
-                "UnitType":Building.buildingToMove,
-                "AssetClass":"Building",
-                // "owner":owner,
-                "ServerId":Number(Building.Sid)
-            }
-            const objLoad=await globalmanager.objectLoad(Building.buildingToMove,"Building")
-            if(objLoad){LoadTo.addToScene(Building.buildingToMove, Meta)}
+    const LoadTo=globalmanager.getTile(Building.cx,Building.cy)
+    
+    if(LoadTo){
+        const Meta={
+            "position":[Building.px*3,Building.py*3],//in pixel values for the chunk its to be deployed in!
+            "UnitType":Building.building,
+            "AssetClass":"Building",
+            "ServerId":Number(Building.ServerId)
         }
-        else{/*user does not have the tile loaded to create the unit */}
+
+        const objLoad=await globalmanager.objectLoad(Building.building,"Building")
+        if(objLoad){
+            await LoadTo.addToScene(Building.building, Meta)
+
+            LoadTo.AdjustBuildingOpacity(Number(Building.ServerId),0.5);
+        }
     }
 }
 
+async function HandleBuildingUpdate(Update){
+    const building=Update.building
+    const cx=Update.cx
+    const cy=Update.cy
+    // const Sid=Update.ServerId
+    const Sid=Number(Update.ServerId)
+    const Health=Update.Health
 
+    //get the tile update belongs to
+    const LoadTo=globalmanager.getTile(cx,cy)
+    if(!LoadTo){return}
 
+    LoadTo.UpdateBuilding(building,Sid,Health);
+}
 
+async function HandleBuildingShaderChange(Update){
+    const building=Update.building
+    const cx=Update.cx
+    const cy=Update.cy
+    const Sid=Number(Update.ServerId)
+
+    //get the tile update belongs to
+    const LoadTo=globalmanager.getTile(cx,cy)
+    if(!LoadTo){return}
+
+    console.log(Sid,"finale")
+    LoadTo.AdjustBuildingOpacity(Sid,1.0);
+}
 
 function HandleSocketResponses(socket){
 

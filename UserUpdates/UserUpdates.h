@@ -30,6 +30,7 @@ void ConstructionUpdateTask(void *arg);
 
 void BuildingPosUpdateTask(void *arg);
 
+void BuildingPlaceTask(void *arg);
 
 
 void TrainingUpdateTask(void *arg);

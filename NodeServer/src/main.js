@@ -119,9 +119,29 @@ pipeMsgs.on('data', (data) => {
                     break;
                 case "PlacementMovement":
                     sockid=usersocketMap.get(msg.username)
-                    // console.log(msg)
                     io.to(sockid).emit('buildingplacementhover',{"RequestMetaData":msg});
-
+                    break;
+                case "BuildingPlaced":
+                    for(const username of msg.inform){
+                        sockid=usersocketMap.get(username)
+                        io.to(sockid).emit('BuildingPlaced',msg.details);
+                    }
+                    
+                    break;
+                case "BuildingConstructionUpdate":
+                    console.log(msg)
+                    for(const username of msg.inform){
+                        sockid=usersocketMap.get(username)
+                        io.to(sockid).emit('BuildingUpdate',msg.details);
+                    }    
+                    break;
+                case "BuildingOperational":
+                    console.log(msg)
+                    for(const username of msg.inform){
+                        sockid=usersocketMap.get(username)
+                        io.to(sockid).emit('BuildOperational',msg.details);
+                    }
+                    
                     break;
                 default:;
             }
@@ -357,7 +377,15 @@ io.on('connection', async (socket) => {
         }) + "\n");
     });
 
-    socket.on('BuildingPlacement',async ({RequestMetaData}) =>{})
+    socket.on('BuildingPlacement',async ({RequestMetaData}) =>{
+        if(!socket.authenticated){console.log("unauthorised tile request");return;}
+        pipe.write(JSON.stringify({
+            type: "BuildingPlacement",
+            username: socket.username,
+            building:RequestMetaData.Building,
+            position:RequestMetaData.pos
+        }) + "\n");
+    })
 
 
     //sockets pertaining to unit movement and creation

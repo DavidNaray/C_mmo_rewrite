@@ -19,26 +19,26 @@ export class TileInstancePool {
     GeneralAddInstance(objectType, transform,meta={}){
 
         let mesh=this.instanceGroups.get(objectType);
+        
         if(!mesh){
-            //if there was no key of objectType then there wont be a value
             mesh=this.createInstanceObjectOfCount(objectType,3);
             this.instanceGroups.set(objectType,mesh)
             scene.add(mesh);
-        }else{
+        }
+        else{
             const trueMax=mesh.instanceMatrix.count
-
             if(mesh.count >= trueMax){
                 const newMesh=this.createInstanceObjectOfCount(objectType,trueMax+16,mesh);
-                newMesh.metadata=mesh.metadata;
-                //need to copy over the information from the current mesh, +16 so it doesnt replace too often
+                newMesh.metadata=mesh.metadata;//copy over from smaller instancedmesh
+                
                 scene.remove(mesh)
                 mesh = newMesh;
                 scene.add(mesh);
+                
                 this.instanceGroups.set(objectType,mesh);
-            }
-        }
-        let index;
-        index = mesh.count++;
+        }   }
+
+        const index = mesh.count++;
 
         this.ServerId_To_ObjTypeAndInstId_Mapping.set(meta.ServerId,[objectType,index]);
 
@@ -47,32 +47,32 @@ export class TileInstancePool {
         mesh.metadata.set(index,meta);
         mesh.instanceMatrix.needsUpdate = true;
 
-        if (!meta.underConstruction) {
-            mesh.geometry.getAttribute("instanceOpacity").setX(index, 0.5);
-            mesh.geometry.getAttribute("instanceOpacity").needsUpdate = true;
-        }
+        // if (meta.underConstruction) {
+        //     mesh.geometry.getAttribute("instanceOpacity").setX(index, 0.5);
+        //     mesh.geometry.getAttribute("instanceOpacity").needsUpdate = true;
+        // }
         if (index >= mesh.count) {mesh.count = index + 1;}
         mesh.computeBoundingSphere();
         requestRenderIfNotRequested();
     }
 
-
-    createInstanceObjectOfCount(objectType,count,oldMesh = null){
+    createInstanceObjectOfCount(objectType, count, oldMesh = null) {
         const objectTypeMesh = globalmanager.getAsset(objectType);
-        const geometry = objectTypeMesh.geometry;
+
+        //CLONE GEOMETRY SO WE DON'T MUTATE THE BASE ASSET
+        const geometry = objectTypeMesh.geometry.clone();
         const baseMat  = objectTypeMesh.materials;
 
-
         const opacityAttr = new THREE.InstancedBufferAttribute(new Float32Array(count), 1);
-        for (let i = 0; i < count; i++) opacityAttr.setX(i, 1); // default fully opaque
+        for (let i = 0; i < count; i++) opacityAttr.setX(i, 1);
         geometry.setAttribute("instanceOpacity", opacityAttr);
-        opacityAttr.needsUpdate = true
-        
+        opacityAttr.needsUpdate = true;
+
         let material;
         if (Array.isArray(baseMat)) {
-            // console.log("hmmmmm, mats array")
-            material = baseMat.map(m => m.clone());
-            material.forEach((mat) => {
+            material = baseMat.map(m => {
+                const mat = m.clone();
+
                 mat.onBeforeCompile = (shader) => {
                     shader.vertexShader = `
                         attribute float instanceOpacity;
@@ -97,31 +97,31 @@ export class TileInstancePool {
                         `
                     );
                 };
-                mat.transparent = true; // enable opacity
-                // mat.depthWrite = false; // crucial for blending
+
+                mat.transparent = true;
                 mat.needsUpdate = true;
+                return mat;
             });
 
         } else if (baseMat.clone) {
-            material = baseMat.clone();
-            material.transparent = true; // enable opacity
-            material.opacity = 0.5;           // adjust to desired see-through
+            const mat = baseMat.clone();
+            mat.transparent = true;
+            mat.opacity = 1.0;
+            mat.needsUpdate = true;
+            material = mat;
+
         } else {
             console.warn("Material has no clone(), using as-is:", baseMat);
             material = baseMat;
         }
 
-
         const mesh = new THREE.InstancedMesh(geometry, material, count);
         mesh.metadata = new Map();
-
-
 
         const freeIndices = new Set();
         for (let j = 0; j < count; j++) freeIndices.add(j);
         mesh.freeIndices = freeIndices;
 
-        // Copy old mesh matrices if resizing
         if (oldMesh) {
             const oldOpacityAttr = oldMesh.geometry.getAttribute("instanceOpacity");
 
@@ -130,28 +130,15 @@ export class TileInstancePool {
                 oldMesh.getMatrixAt(i, this.dummyMatrix);
                 mesh.setMatrixAt(i, this.dummyMatrix);
 
-                // Copy opacity
-                // const oldOpacity = oldOpacityAttr.getX(i);
-                // opacityAttr.setX(i, oldOpacity);
-                // console.log("oldOpacity",oldOpacity)
-                // if(oldOpacity<1){mesh.geometry.getAttribute("instanceOpacity").setX(index, 0.5);}
-                
-                
-
-                // Copy metadata
                 const meta = oldMesh.metadata.get(i);
-                console.log("meta",meta.underConstruction)
                 if (meta) mesh.metadata.set(i, meta);
 
-                if(meta.underConstruction==false){
-                    mesh.geometry.getAttribute("instanceOpacity").setX(i, 0.5);
-                }
-
+                const oldOpacity = oldOpacityAttr.getX(i);
+                opacityAttr.setX(i, oldOpacity);
             }
-            
+
             mesh.count = oldMesh.count;
             mesh.geometry.getAttribute("instanceOpacity").needsUpdate = true;
-            // opacityAttr.needsUpdate = true;
         } else {
             mesh.count = 0;
         }
@@ -247,5 +234,30 @@ export class TileInstancePool {
         requestRenderIfNotRequested();
     }
 
+    setInstanceOpacity(serverId, opacity) {
+        const relevantInfo = this.ServerId_To_ObjTypeAndInstId_Mapping.get(serverId);
+        if (!relevantInfo) return false;
+
+        const [objectType, instanceId] = relevantInfo;
+
+        const mesh = this.instanceGroups.get(objectType);
+
+        if (!mesh) return false;
+        if (instanceId >= mesh.count) return false;
+
+        // Clamp to 0..1
+        opacity = Math.max(0, Math.min(1, opacity));
+
+        const opacityAttr = mesh.geometry.getAttribute("instanceOpacity");
+
+        if (!opacityAttr) return false;
+
+        opacityAttr.setX(instanceId, opacity);
+        opacityAttr.needsUpdate = true;
+
+        requestRenderIfNotRequested();
+
+        return true;
+    }
 
 }

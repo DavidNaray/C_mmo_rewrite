@@ -148,9 +148,10 @@ export class RendererUserInputState{
         if(foundTile && hit){
             const instanced=hit.instanceId !== undefined
             if (instanced) {
+                console.log("hit instanced object",hit)
                 UnitSelectionDisplay([hit])
                 this.SelectedItems=[{chunk:`${foundTile.x},${foundTile.y}`,instanceId:hit.instanceId,obj:hit.object}];
-            }
+            }else{console.log("hit none instanced object",hit)}
         }
     }
 
@@ -243,6 +244,7 @@ export class RendererUserInputState{
                 }                
                 
                 //remove placement mode
+                console.log("removing placement building",this.placementBuilding)
                 scene.remove(this.placementBuilding)
                 this.setPlacementBuilding(undefined)
                 this.PlacementMode=false

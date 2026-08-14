@@ -42,8 +42,6 @@ void IncrementTickSystem(){
 
         Building* building = ftile->buildings.list[co->index];
         building->base.health++;
-        // printf("%d\n",building->base.health);
-        // printf("%d\n",building->base.ServerId);
         
         char uniquenames[9][256];
         int uniquecount=TileObservers(ftile,uniquenames);
@@ -89,8 +87,6 @@ void IncrementTickSystem(){
 
         if (building->base.health >= building->base.maxHealth) {
             // construction complete
-
-            
             snprintf(
                 detailsPart, sizeof(detailsPart),
                 "\"details\":{"
@@ -127,6 +123,7 @@ void IncrementTickSystem(){
     }
     pthread_mutex_unlock(&GlobalCache->lock);
 
+
     //unit training
     pthread_mutex_lock(&GlobalCache->lock);
     for (int i = 0; i < b->UnitTrainings.count; i++) {
@@ -137,18 +134,54 @@ void IncrementTickSystem(){
 
         for (int j = 0; j < MAX_REGIMENS; j++) {
             RegimenTraining* rt = &u->regimenTrainingList.regimens[j];
-            if(!rt->active){continue;}//if false then nothing to do here
+            if(!rt->active || rt->deployable){continue;}//if false then nothing to do here
 
+            int totalProgress = 0;
+            int totalFinish = 0;
             bool allDone = true;
             for (int t = 0; t < UNIT_MAX; t++) {
                 UnitTraining* tr = &rt->units[t];
                 if (tr->count <= 0){continue;}//no units to train of this type, skip
                 tr->progress++;
+                totalProgress += tr->progress;
+                totalFinish += tr->finish;
 
                 if (tr->progress <= tr->finish) {allDone=false;}
             }
-            if(allDone){
-                //make the regimen available for deployment
+
+            int completeness = 0;
+            completeness = (totalProgress * 100) / totalFinish;
+            if (completeness > 100){completeness = 100;}
+
+            if (allDone) {
+                rt->deployable = true;
+
+                char msg[256];
+                snprintf(
+                    msg, sizeof(msg),
+                    "{\"type\":\"RegimenReady\","
+                    "\"username\":\"%s\","
+                    "\"slot\":%d}",
+                    ut->username,
+                    j
+                );
+
+                send_message(msg);
+            }
+            else {
+                char msg[256];
+                snprintf(
+                    msg, sizeof(msg),
+                    "{\"type\":\"RegimenUpdate\","
+                    "\"username\":\"%s\","
+                    "\"slot\":%d,"
+                    "\"done\":%d}",
+                    ut->username,
+                    j,
+                    completeness
+                );
+
+                send_message(msg);
             }
 
         }

@@ -1,12 +1,20 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.176.0/build/three.module.js";
 
 import {renderer,InputState,scene,requestRenderIfNotRequested,sceneSetup} from "../siteJS.js"
-import {onPointerMove,intersectsTileMeshes,suppressPlacement} from "./RaycasterHandling.js"
+// import {onPointerMove,intersectsTileMeshes,suppressPlacement} from "./RaycasterHandling.js"
 import {makeToolTipTechnology} from "./ResourceTips.js"
 
 
 import {buildWallSegments,trySnapPoint} from "./WallPlacementFuncs.js"
 import {superHeightMapTexture} from "./SuperCanvas.js"
+
+import {styleOuterDiv,
+    AddImageToElem,
+    styleInnerContainer,
+    TitleAndCancelSection,
+    StyleBotContainer,
+    ProgressBar,
+DeployButton} from "./Utils.js"
 
 export let socket;
 var userPoints = [];
@@ -51,16 +59,16 @@ export function setupSocketConnection(){
 
 
     socket.on("NewRegimen", (response) => {HandleNewRegimen(response)})
-
     socket.on("RegLoad", (response) => {HandleRegLoad(response.details.regimens)})
+    socket.on("RegimenReady", (response) => {console.log("RegimenReady",response)})
+    socket.on("RegimenUpdate", (response) => {console.log("RegimenUpdate",response)})
+    
 
     socket.on("buildingplacementhover", (response) => {HandleMovePlacementBuilding(response.RequestMetaData)})
-
     socket.on("BuildingPlaced", async (response) => { await HandlePlaceBuilding(response)})
-
     socket.on("BuildingUpdate", async (response) => {HandleBuildingUpdate(response) })
-
     socket.on("BuildOperational", async (response) => {HandleBuildingShaderChange(response)})
+
 
     socket.on("TickUpdate",async (response)=>{
         const replacements=response.replacements
@@ -364,175 +372,39 @@ function Handleconstructable(constructable){
 }
 
 
+//------------------------------------------------Regimen handlers
+function stringintoURL(str){return `Icons/Units/${str}.png`;}
 
 function HandleRegLoad(regimens){for (const reg of regimens) {HandleNewRegimen(reg);}}
 
 function HandleNewRegimen(NewRegimen){
-    function stringintoURL(str){return `Icons/Units/${str}.png`;}
-    function TopSec(elem){
-        
-        let Imgsec=document.createElement("img");
-        Imgsec.style.width="100%"
-        Imgsec.src=stringintoURL(NewRegimen.regName);//NewRegimen.img;
-        Imgsec.style.backgroundColor="rgb(188, 187, 187)";
-        Imgsec.style.objectFit="contain"
-        Imgsec.style.display="block"
-        Imgsec.style.aspectRatio="1/1"
-
-        elem.appendChild(Imgsec)
-        
-        let TopNextContainer=document.createElement("div");
-        TopNextContainer.style.width="calc(100% - max(4px, 0.3vw))"
-        TopNextContainer.style.display="grid"
-        TopNextContainer.style.gridTemplateRows="40% calc(60% - max(4px, 0.3vw))"
-        TopNextContainer.style.rowGap="max(4px, 0.3vw)"
-
-        // ------------------------------------------------------------------------
-        let TNTContainer=document.createElement("div");
-        TNTContainer.style.display="grid"
-        TNTContainer.style.gridTemplateColumns="calc(70% - max(4px, 0.3vw)) 30%"
-        TNTContainer.style.columnGap="max(4px, 0.3vw)"
-
-        let TopTitle=document.createElement("div");
-        TopTitle.innerHTML=NewRegimen.regName;//NewRegimen.UnitType
-        TopTitle.className="resourceText"
-        TopTitle.style.fontSize="max(20px,1vw)";
-        TopTitle.style.backgroundColor="rgb(188, 187, 187)";
-        
-        TNTContainer.appendChild(TopTitle)
-
-        let LastTopContainer=document.createElement("div");
-        LastTopContainer.style.display="flex"
-
-        let LeftFill = document.createElement("div");
-        LeftFill.style.flex = "1"; // takes remaining width
-        LeftFill.style.marginRight = "max(4px, 0.3vw)";
-        LeftFill.style.backgroundColor="rgb(188, 187, 187)";
-        LeftFill.style.gap = "max(4px, 0.3vw)";
-        LeftFill.style.display = "flex";
-
-        // LEFT square
-        let BotLeft = document.createElement("div");
-        BotLeft.style.height = "100%";
-        BotLeft.style.aspectRatio = "1 / 1";
-        BotLeft.style.backgroundImage="url('Icons/Subtract.png')"
-        BotLeft.className="IconGeneral"
-        BotLeft.myParam=-1
-
-        // MIDDLE filler
-        let BotMiddle = document.createElement("div");
-        BotMiddle.style.flex = "1";
-        BotMiddle.innerHTML="1/1"
-        BotMiddle.className="resourceText"
-        BotMiddle.style.fontSize="max(15px,1vw)"
-
-        // RIGHT square
-        let BotRight = document.createElement("div");
-        BotRight.style.height = "100%";
-        BotRight.style.aspectRatio = "1 / 1";
-        BotRight.style.backgroundImage="url('Icons/Add.png')"
-        BotRight.className="IconGeneral"
-        BotRight.myParam=1
-
-        LeftFill.appendChild(BotLeft);
-        LeftFill.appendChild(BotMiddle);
-        LeftFill.appendChild(BotRight);
-
-        LastTopContainer.appendChild(LeftFill)
-
-        let DestroyRegimen=document.createElement("div");
-        DestroyRegimen.style.height="100%"
-        DestroyRegimen.style.aspectRatio="1/1"
-        DestroyRegimen.style.backgroundColor="rgb(188, 187, 187)";
-        DestroyRegimen.style.marginLeft = "auto";
-        DestroyRegimen.style.backgroundImage="url('Icons/Cross.png')"
-        DestroyRegimen.className="IconGeneral"
-
-        LastTopContainer.appendChild(DestroyRegimen)
-        TNTContainer.appendChild(LastTopContainer)
-
-        TopNextContainer.appendChild(TNTContainer)
-
-
-        let BotNext=document.createElement("div");
-        BotNext.style.display="flex"
-
-        let Deploy=document.createElement("div");
-        Deploy.style.height="100%"
-        Deploy.style.aspectRatio="1/1"
-        Deploy.style.backgroundColor="rgb(188, 187, 187)";
-        Deploy.style.marginLeft = "auto";
-        Deploy.style.backgroundImage="url('Icons/Deploy.png')"
-        Deploy.className="IconGeneral"
-
-        let LastBotContainer=document.createElement("div");
-        LastBotContainer.style.display="flex";
-
-        let LeftFillBot = document.createElement("div");
-        LeftFillBot.style.flex = "1";
-        LeftFillBot.style.marginRight = "max(4px, 0.3vw)";
-        LeftFillBot.style.display="grid"
-        LeftFillBot.style.gridTemplateColumns="1fr 1fr"
-        LeftFillBot.style.columnGap="max(4px, 0.3vw)"
-
-        let from = document.createElement("div");
-        from.innerHTML="Deploy To:"
-        from.className="resourceText"
-        from.style.fontSize="max(15px,1vw)"
-        from.style.justifyContent="left"
-        from.style.padding="0 max(4px, 0.3vw) 0 max(4px, 0.3vw)"
-        from.style.backgroundColor="rgb(188, 187, 187)";
-        LeftFillBot.appendChild(from)
-
-        let Status = document.createElement("div");
-        Status.innerHTML="Status: Ready"
-        Status.className="resourceText"
-        Status.style.fontSize="max(15px,1vw)"
-        Status.style.justifyContent="left"
-        Status.style.padding="0 max(4px, 0.3vw) 0 max(4px, 0.3vw)"
-        Status.style.backgroundColor="rgb(188, 187, 187)";
-        LeftFillBot.appendChild(Status)
-
-
-        BotNext.appendChild(LeftFillBot)
-        BotNext.appendChild(Deploy)
-        TopNextContainer.appendChild(BotNext)
-
-        elem.appendChild(TopNextContainer)
-
-        BotLeft.addEventListener("click",UImanager.RegimenCountAdjust)//decrement
-        BotRight.addEventListener("click",UImanager.RegimenCountAdjust)//increment
-
-        DestroyRegimen.addEventListener("click",UImanager.DestroyRegimen)//delete the regimen
-        Deploy.addEventListener("click",UImanager.DeployReadyUnits)//deploy ready units
-
-        from.addEventListener("click",UImanager.DeployPosition)//set a deploy point
-
-    }
-
 
     const To=UImanager.getTBRegBody()
 
     let option=document.createElement("div");
-    option.style.width="calc(100% - max(8px, 0.6vw))"
-    option.style.minHeight="10px"
-    option.style.outline="lightgray dashed 0.1vw"; 
-    option.style.backgroundColor="rgba(216,216,216,0.2)"
-    option.style.padding="max(4px, 0.3vw)"
-    option.style.display="grid"
-    option.style.gridTemplateColumns="10% 90%"
-    option.style.columnGap="max(4px, 0.3vw)"
-
     option.myParam=[NewRegimen.slot] //reference to the appropriate regimen record on server
 
-    TopSec(option)
+    styleOuterDiv(option);
+    AddImageToElem(option,stringintoURL(NewRegimen.regName));
+    
+    let innerContainer=document.createElement("div");
+    styleInnerContainer(innerContainer);
+    option.appendChild(innerContainer);
+
+    TitleAndCancelSection(innerContainer,NewRegimen.regName);
+
+    let BotContainer=document.createElement("div");
+    StyleBotContainer(BotContainer);
+    ProgressBar(BotContainer);
+    DeployButton(BotContainer);
+    innerContainer.appendChild(BotContainer);
 
     To.appendChild(option);
 
     UImanager.hideBoxes("TrainingBox")//can overflow the box, this makes sure it catches that moment
 }
 
-
+//------------------------------------------------
 
 
 
@@ -561,7 +433,6 @@ async function HandleUnitReplacements(replacements){
         else{/*user does not have the tile loaded to create the unit */}
     }
 }
-
 
 function HandleAdjustRegimenCount(AdjustRegimenCount){
     if(!AdjustRegimenCount.Rid){return}
@@ -601,6 +472,7 @@ function HandleDelRegimen(HandleDelRegimen){
 }
 
 
+//------------------------------------------------building handlers
 function HandleMovePlacementBuilding(MovePlacementBuilding){
 
     if(!InputManager.PlacementMode){return}//final line of defense again residual / accidental call
@@ -728,6 +600,9 @@ async function HandleBuildingShaderChange(Update){
     console.log(Sid,"finale")
     LoadTo.AdjustBuildingOpacity(Sid,1.0);
 }
+
+//-------------------------------------------------------------
+
 
 function HandleSocketResponses(socket){
 

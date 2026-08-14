@@ -136,12 +136,20 @@ pipeMsgs.on('data', (data) => {
                     }    
                     break;
                 case "BuildingOperational":
-                    console.log(msg)
+                    // console.log(msg)
                     for(const username of msg.inform){
                         sockid=usersocketMap.get(username)
                         io.to(sockid).emit('BuildOperational',msg.details);
                     }
                     
+                    break;
+                case "RegimenReady":
+                    sockid=usersocketMap.get(msg.username)
+                    io.to(sockid).emit('RegimenReady',{"slot":msg.slot});
+                    break;
+                case "RegimenUpdate":
+                    sockid=usersocketMap.get(msg.username)
+                    io.to(sockid).emit('RegimenUpdate',{"slot":msg.slot,"done":msg.done});
                     break;
                 default:;
             }
@@ -338,9 +346,9 @@ io.on('connection', async (socket) => {
         if(!socket.authenticated){console.log("unauthorised tile request");return;}
 
         const types={
-            "ARCHER":{Description:"Uses a bow to eliminate foes from afar",unlocked:true},
-            "SPEARMAN":{Description:"A basic infantry unit",unlocked:true},
-            "SWORDSMAN":{Description:"a durable infantry unit",unlocked:true}
+            "Archer":{Description:"Uses a bow to eliminate foes from afar",unlocked:true},
+            "Spearman":{Description:"A basic infantry unit",unlocked:true},
+            "Swordsman":{Description:"a durable infantry unit",unlocked:true}
         }
         socket.emit("availableUnitTypes",{types})
     })

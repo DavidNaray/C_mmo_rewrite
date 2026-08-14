@@ -8,7 +8,6 @@ import { setupSocketConnection,emitRegister,
 import {MakeToolTips} from "./JS_Externals/ResourceTips.js"
 import {addEventListenersToButtons} from "./JS_Externals/DropDownUI.js"
 import {updateGridColumns} from "./JS_Externals/Utils.js"
-import {raycaster,pointer,MouseDownHandling,MouseMovingHandling,MouseUpHandling} from "./JS_Externals/RaycasterHandling.js"
 
 import {globalmanager} from "./JS_Externals/GlobalInstanceMngr.js"
 import {InputManager} from "./JS_Externals/UserInputState.js"
@@ -37,9 +36,9 @@ export function sceneSetup(){
     UImanager.AddListeners()
 
     //add eventlisteners to allow object selection
-    renderer.domElement.addEventListener("mousedown",MouseDownHandling)
-    renderer.domElement.addEventListener("mousemove",MouseMovingHandling)
-    renderer.domElement.addEventListener("mouseup",MouseUpHandling)
+    // renderer.domElement.addEventListener("mousedown",MouseDownHandling)
+    // renderer.domElement.addEventListener("mousemove",MouseMovingHandling)
+    // renderer.domElement.addEventListener("mouseup",MouseUpHandling)
 
     camera = new THREE.PerspectiveCamera( 75, renderer.domElement.width / renderer.domElement.height, 0.1, 10000 );//window.innerWidth / window.innerHeight
     camera.position.z = 0

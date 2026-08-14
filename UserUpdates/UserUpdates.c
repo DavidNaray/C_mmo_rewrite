@@ -11,12 +11,6 @@
 #include <cJSON.h>
 #include <windows.h>
 
-static RegimentTemplate RegimentTemplates[MAX_REGIMENS] = {
-    { "ARCHER",     {1, 0, 0} },
-    { "SPEARMAN",   {0, 1, 0} },
-    { "SWORDSMAN",  {0, 0, 1} }
-    // user-defined templates will be loaded here later
-};
 
 static cJSON* tech_to_json(const Tech* t){
     cJSON* obj = cJSON_CreateObject();
@@ -165,7 +159,6 @@ void TrainingUpdateTask(void *arg){
 
 void NewRegimenTask(void *arg){
 
-
     RegUpdate us=*(RegUpdate *) arg;
     free(arg);
 
@@ -179,6 +172,7 @@ void NewRegimenTask(void *arg){
             freeIndex = i;
             break;
     }   }
+    // printf("uh should be ok with new reg?%d%s",freeIndex,us.regName);
     
     if (freeIndex == -1) {// no available training slot
         char header[256];
@@ -190,12 +184,11 @@ void NewRegimenTask(void *arg){
         send_message(header);
     }
     else{
-        //add the regimen to those in training
-        //name must correspond to a template type
         int templateIndex=-1;
-        for (int i = 0; i < MAX_REGIMENS; i++) {
-            if (strcmp(RegimentTemplates[i].name, us.regName) == 0) {templateIndex=i;}
+        for (int j = 0; j < UNIT_MAX; j++) {
+            if (strcmp(RegimenTemplates[j].name, us.regName) == 0) {templateIndex=j;}
         }
+
         if(templateIndex==-1){
             char header[256];
             int header_len = snprintf(
@@ -207,19 +200,10 @@ void NewRegimenTask(void *arg){
         }
         else{
             pthread_mutex_lock(&GlobalCache->lock);
-            RegimenTraining* rt = &u->regimenTrainingList.regimens[freeIndex];
-            rt->active = true;
             
-            strncpy(rt->name, us.regName, sizeof(rt->name));
-            rt->name[sizeof(rt->name)-1] = '\0';
-
-            // initialize units
-            for (int i = 0; i < UNIT_MAX; i++) {
-                rt->units[i].count = RegimentTemplates[templateIndex].units[i];
-                rt->units[i].progress = 0;
-                rt->units[i].finish = 60;//just some kind of timer, 60 seconds
-            }
-
+            RegimenTraining* rt = &u->regimenTrainingList.regimens[freeIndex];
+            *rt = RegimenTemplates[templateIndex];
+            rt->active = true;
             pthread_mutex_unlock(&GlobalCache->lock);
 
             char msg[256];
@@ -412,7 +396,7 @@ static cJSON* Buildings_to_json(const BuildingsTypes* T){
 }
 
 void ConstructionUpdateTask(void *arg){
-    printf("huh construct \n");
+    // printf("huh construct \n");
     UUpdate us=*(UUpdate *) arg;
     pthread_mutex_lock(&GlobalCache->lock);
 
@@ -447,30 +431,6 @@ void ConstructionUpdateTask(void *arg){
     cJSON_Delete(Build_json);
 
 }
-
-
-// BuildingType bTypeFromString(const char *s) {
-//     if (strcmp(s, "Barracks") == 0) return Barracks;
-//     if (strcmp(s, "Factory") == 0) return Factory;
-//     if (strcmp(s, "Farm") == 0) return Farm;
-//     if (strcmp(s, "LumberMill") == 0) return LumberMill;
-//     if (strcmp(s, "Market") == 0) return Market;
-//     if (strcmp(s, "Quarry") == 0) return Quarry;
-//     if (strcmp(s, "StoneGate") == 0) return StoneGate;
-//     if (strcmp(s, "StoneHouse") == 0) return StoneHouse;
-//     if (strcmp(s, "StoneKeep") == 0) return StoneKeep;
-//     if (strcmp(s, "StoneTower") == 0) return StoneTower;
-//     if (strcmp(s, "StoneWall") == 0) return StoneWall;
-//     if (strcmp(s, "TownHall") == 0) return TownHall;
-//     if (strcmp(s, "warehouse") == 0) return warehouse;
-//     if (strcmp(s, "WoodenKeep") == 0) return WoodenKeep;
-//     if (strcmp(s, "WoodenTower") == 0) return WoodenTower;
-//     if (strcmp(s, "WoodGate") == 0) return WoodGate;
-//     if (strcmp(s, "WoodHouse") == 0) return WoodHouse;
-//     if (strcmp(s, "WoodWall") == 0) return WoodWall;
-
-//     return BUILDING_MAX; // invalid
-// }
 
 bool canplacebuilding(WalkMapPoint buffer[512][512], Building template,int xp,int yp){
     //building width and height

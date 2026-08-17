@@ -42,6 +42,8 @@ void IncrementTickSystem(){
 
         Building* building = ftile->buildings.list[co->index];
         building->base.health++;
+        int completeness = (building->base.health * 100) / building->base.maxHealth;
+        if (completeness > 100) completeness = 100;
         
         char uniquenames[9][256];
         int uniquecount=TileObservers(ftile,uniquenames);
@@ -63,12 +65,14 @@ void IncrementTickSystem(){
             detailsPart, sizeof(detailsPart),
             "\"details\":{"
                 "\"Health\":%d,"
+                "\"percent\":%d,"
                 "\"cx\":%d,"
                 "\"cy\":%d,"
                 "\"ServerId\":%d,"
                 "\"building\":\"%s\""
             "}",
             building->base.health,
+            completeness,
             ftile->x,
             ftile->y,
             building->base.ServerId,
@@ -249,19 +253,35 @@ void AddConstructionOrder(int index,int cx,int cy,int px,int py) {
     // printf("added buildingorder to bucket\n");
 }
 
+bool user_exists_in_any_bucket(char* username) {
+    for (int b = 0; b < 5; b++) {
+        UTList* ul = &TickS.Buckets[b].UnitTrainings;
+        for (int i = 0; i < ul->count; i++) {
+            if (strcmp(ul->list[i]->username, username) == 0) {
+                return true;
+    }   }   }
+    return false;
+}
+
 
 void AddUserWithTrainingOrders(char* username) {
-    Bucket* b = &TickS.Buckets[TickS.currBucket];
-    UTList* ul = &b->UnitTrainings;
 
-    if (ul->count >= ul->capacity) {
-        ul->list = grow_list(ul->list, &ul->capacity, sizeof(UnitTrainingOrders*));
+    //check if username is already accounted for in any of the buckets
+    bool exists=user_exists_in_any_bucket(username);
+
+    if(!exists){
+        Bucket* b = &TickS.Buckets[TickS.currBucket];
+        UTList* ul = &b->UnitTrainings;
+
+        if (ul->count >= ul->capacity) {
+            ul->list = grow_list(ul->list, &ul->capacity, sizeof(UnitTrainingOrders*));
+        }
+
+        UnitTrainingOrders* uto = malloc(sizeof(UnitTrainingOrders));
+        strncpy(uto->username, username, sizeof(uto->username));
+        uto->username[sizeof(uto->username)-1] = '\0';
+        // memcpy(uto->username, username, 256);
+
+        ul->list[ul->count++] = uto;
     }
-
-    UnitTrainingOrders* uto = malloc(sizeof(UnitTrainingOrders));
-    strncpy(uto->username, username, sizeof(uto->username));
-    uto->username[sizeof(uto->username)-1] = '\0';
-    // memcpy(uto->username, username, 256);
-
-    ul->list[ul->count++] = uto;
 }

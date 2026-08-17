@@ -61,7 +61,7 @@ export function setupSocketConnection(){
     socket.on("NewRegimen", (response) => {HandleNewRegimen(response)})
     socket.on("RegLoad", (response) => {HandleRegLoad(response.details.regimens)})
     socket.on("RegimenReady", (response) => {console.log("RegimenReady",response)})
-    socket.on("RegimenUpdate", (response) => {console.log("RegimenUpdate",response)})
+    socket.on("RegimenUpdate", (response) => {HandleRegUpdate(response);})
     
 
     socket.on("buildingplacementhover", (response) => {HandleMovePlacementBuilding(response.RequestMetaData)})
@@ -82,8 +82,6 @@ export function setupSocketConnection(){
         const AdjustRegimenCount=response.AdjustRegimenCount
         const DelRegimen=response.DelRegimen
 
-        const constructable=response.Constructable
-
         //move units across chunks
         if(replacements){await HandleUnitReplacements(replacements)}
 
@@ -101,8 +99,6 @@ export function setupSocketConnection(){
 
         //alert user of daily reward
         if(DailyReward){HandleDailyReward(DailyReward)}
-
-        if(constructable){Handleconstructable(constructable)}
 
         if(AdjustRegimenCount){HandleAdjustRegimenCount(AdjustRegimenCount)}
 
@@ -135,6 +131,10 @@ export function setupSocketConnection(){
         }
 
         for (const TileData of response.RequestMetaData.tiles) {
+            await globalmanager.CreateTile(TileData)
+        }
+
+        for (const TileData of response.RequestMetaData.neighbours) {
             await globalmanager.CreateTile(TileData)
         }
 
@@ -396,12 +396,24 @@ function HandleNewRegimen(NewRegimen){
     let BotContainer=document.createElement("div");
     StyleBotContainer(BotContainer);
     ProgressBar(BotContainer);
-    DeployButton(BotContainer);
+    // DeployButton(BotContainer);
     innerContainer.appendChild(BotContainer);
 
     To.appendChild(option);
 
     UImanager.hideBoxes("TrainingBox")//can overflow the box, this makes sure it catches that moment
+}
+
+function HandleRegUpdate(Update){
+    const To=UImanager.getTBRegBody()
+
+    for (const child of To.children) {
+        if(child.myParam!=Update.slot){continue}
+        
+        //access the progress bar track 
+        const bar=child.children[1].children[1].children[0].children[1].children[0]
+        bar.style.width=`${Update.done}%`;
+    }
 }
 
 //------------------------------------------------
@@ -552,6 +564,7 @@ function HandleMovePlacementBuilding(MovePlacementBuilding){
 }
 
 async function HandlePlaceBuilding(Building){
+    function stringintoURL(str){return `Icons/Buildings/${str}.png`;}
 
     const LoadTo=globalmanager.getTile(Building.cx,Building.cy)
     
@@ -569,6 +582,28 @@ async function HandlePlaceBuilding(Building){
 
             LoadTo.AdjustBuildingOpacity(Number(Building.ServerId),0.5);
         }
+
+        const To=UImanager.getCConBody()
+
+        let option=document.createElement("div");
+        option.myParam=[Building.ServerId] //reference to the appropriate regimen record on server
+
+        styleOuterDiv(option);
+        AddImageToElem(option,stringintoURL(Building.building));
+        
+        let innerContainer=document.createElement("div");
+        styleInnerContainer(innerContainer);
+        option.appendChild(innerContainer);
+
+        TitleAndCancelSection(innerContainer,Building.building);
+
+        let BotContainer=document.createElement("div");
+        StyleBotContainer(BotContainer);
+        ProgressBar(BotContainer);
+        DeployButton(BotContainer);
+        innerContainer.appendChild(BotContainer);
+
+        To.appendChild(option);
     }
 }
 
@@ -585,6 +620,16 @@ async function HandleBuildingUpdate(Update){
     if(!LoadTo){return}
 
     LoadTo.UpdateBuilding(building,Sid,Health);
+
+    const To=UImanager.getCConBody()
+
+    for (const child of To.children) {
+        if(child.myParam!=Update.ServerId){continue}
+        
+        //access the progress bar track 
+        const bar=child.children[1].children[1].children[0].children[1].children[0]
+        bar.style.width=`${Update.percent}%`;
+    }
 }
 
 async function HandleBuildingShaderChange(Update){
@@ -597,8 +642,15 @@ async function HandleBuildingShaderChange(Update){
     const LoadTo=globalmanager.getTile(cx,cy)
     if(!LoadTo){return}
 
-    console.log(Sid,"finale")
     LoadTo.AdjustBuildingOpacity(Sid,1.0);
+
+    const To=UImanager.getCConBody()
+
+    for (const child of To.children) {
+        if(child.myParam!=Update.ServerId){continue}
+        
+        child.remove();
+    }
 }
 
 //-------------------------------------------------------------

@@ -36,6 +36,7 @@ class UIManager {
         this.TBRegBody=document.getElementById("TBRegBody")
 
         this.CBody=document.getElementById("CBody")
+        this.CConBody=document.getElementById("CConBody")
 
         this.widthFlag;
         this.heightFlag;
@@ -54,6 +55,7 @@ class UIManager {
     getTBBody(){return this.TBBody}
     getTBRegBody(){return this.TBRegBody}
     getCBody(){return this.CBody}
+    getCConBody(){return this.CConBody}
 
     hideBoxes(id){
         this.showAppropriateDropDown(true)

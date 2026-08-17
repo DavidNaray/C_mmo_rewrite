@@ -235,70 +235,32 @@ void add_tile_json(Tile * t,cJSON* root){
 
     cJSON_AddItemToObject(tileObj, "textures", textures);
 
-    // cJSON *usernames = cJSON_CreateArray();
-    // for (int i = 0; i < 9; i++) {
-    //     if (t->usernames[i][0] != '\0') {   // skip empty entries
-    //         cJSON_AddItemToArray(usernames, cJSON_CreateString(t->usernames[i]));
-    // }   }
-
-    // cJSON_AddItemToObject(tileObj, "usernames", usernames);
-
     // append tile to tiles array
     cJSON_AddItemToArray(tiles, tileObj);
 }
 
-int visited_contains(Tile** visited, int visitedCount, Tile* t) {
-    for (int i = 0; i < visitedCount; i++) {
-        if (visited[i] == t) return 1;
-    }
-    return 0;
-}
+void add_tile_json_to_array(Tile *t, cJSON *array) {
+    cJSON *tileObj = cJSON_CreateObject();
+    cJSON_AddNumberToObject(tileObj, "x", t->x);
+    cJSON_AddNumberToObject(tileObj, "y", t->y);
 
-void recursiveTilePiece(Tile * focusTile,char* username,Tile** visitedList,int* visitedCount,cJSON* root){
-    visitedList[*visitedCount] = focusTile;
-    (*visitedCount)++;
+    cJSON *textures = cJSON_CreateObject();
+    cJSON_AddStringToObject(textures, "texturemapUrl", t->textures.texturemapUrl);
+    cJSON_AddStringToObject(textures, "heightmapUrl", t->textures.heightmapUrl);
+    cJSON_AddItemToObject(tileObj, "textures", textures);
 
-    //check all surrounding tiles (skip index 4)
-    for(int rows=-1;rows<2;rows++){for(int cols=-1;cols<2;cols++){
-        if(rows==0 && cols==0){continue;}
-            
-        //get the tile at the location 
-        // pthread_mutex_lock(&GlobalCache->lock);
-        Tile * ftile=cache_get_tile(GlobalCache,focusTile->x + cols,focusTile->y + rows);
-        if(ftile == NULL){continue;}
-
-        //check if neighbour in visited
-        if (visited_contains(visitedList, *visitedCount, ftile)){continue;}
-
-        //does the found tile contain the username?
-        for(int index=0;index<9;index++){
-            if (strcmp(ftile->usernames[index], username) == 0){
-                //add the tile info to the json
-                add_tile_json(ftile,root);
-
-                // pthread_mutex_unlock(&GlobalCache->lock);
-
-                //keep the search going
-                recursiveTilePiece(ftile,username,visitedList,visitedCount,root);
-
-                //no point in looking further if found their name
-                break;
-            }
-        }
-
-    }   }
+    cJSON_AddItemToArray(array, tileObj);
 }
 
 void GetUserTiles(void *arg){
     UUpdate us=*(UUpdate *) arg;
     free(arg);
-    // printf("do i even get ehre \n");
-    
+        
     pthread_mutex_lock(&GlobalCache->lock);
     User* u=cache_get_user(GlobalCache,us.username);
     pthread_mutex_unlock(&GlobalCache->lock);
 
-    printf("LOOKUP KEY = '%d,%d'\n", u->originTile[0], u->originTile[1]);
+    // printf("LOOKUP KEY = '%d,%d'\n", u->originTile[0], u->originTile[1]);
     Tile* focusTile = NULL;
     for (int i = 0; i < 100; i++) {   // retry up to 100 times
         pthread_mutex_lock(&GlobalCache->lock);
@@ -311,33 +273,45 @@ void GetUserTiles(void *arg){
 
     if(focusTile == NULL){printf("bruh, null tile \n");return;}
 
-    //start tracking what tiles have been visited
-    int size=1024;
-    Tile** visitedList = malloc(size * sizeof(Tile*));//list of pointers to tiles
-    int visitedCount = 0;
+    pthread_mutex_lock(&GlobalCache->lock);
+    UserTileResult result=cache_GetUserTiles(focusTile,us.username);
+    pthread_mutex_unlock(&GlobalCache->lock);
+
 
     cJSON* root = cJSON_CreateObject();
-    cJSON *tiles = cJSON_CreateArray();
+    cJSON* tiles = cJSON_CreateArray();
     cJSON_AddItemToObject(root, "tiles", tiles);
 
-    cJSON *ogtile = cJSON_CreateArray();
+    // origin tile
+    cJSON* ogtile = cJSON_CreateArray();
     cJSON_AddItemToObject(root, "origintile", ogtile);
     cJSON_AddItemToArray(ogtile, cJSON_CreateNumber(u->originTile[0]));
     cJSON_AddItemToArray(ogtile, cJSON_CreateNumber(u->originTile[1]));
 
-    // printf("focus tile usernames \n");
-    cJSON *usernames = cJSON_CreateArray();
+    // usernames on origin tile
+    cJSON* usernames = cJSON_CreateArray();
     for (int i = 0; i < 9; i++) {
-        if (focusTile->usernames[i][0] != '\0') {   // skip empty entries
+        if (focusTile->usernames[i][0] != '\0') {
             cJSON_AddItemToArray(usernames, cJSON_CreateString(focusTile->usernames[i]));
-    }   }
+        }
+    }
     cJSON_AddItemToObject(root, "usernames", usernames);
 
-    add_tile_json(focusTile,root);
+    // add owned tiles
+    for (int i = 0; i < result.ownedCount; i++) {add_tile_json(result.owned[i], root);}
 
-    // printf("before recursivetilepiece \n");
-    //starting at the origin tile, do a spread search
-    recursiveTilePiece(focusTile,us.username,visitedList, &visitedCount,root);
+    // add neighbour tiles
+    cJSON* neighbours = cJSON_CreateArray();
+    cJSON_AddItemToObject(root, "neighbours", neighbours);
+    for (int i = 0; i < result.neighbourCount; i++) {
+        Tile* t = result.neighbours[i];
+        add_tile_json_to_array(t,neighbours);
+    }
+
+    free(result.owned);
+    free(result.neighbours);
+
+
 
     char* tiles_str  = cJSON_PrintUnformatted(root);
     
@@ -361,7 +335,6 @@ void GetUserTiles(void *arg){
 
     free(tiles_str);
     free(final);
-    free(visitedList);
     cJSON_Delete(root);
 }
 
@@ -528,118 +501,4 @@ void BuildingPosUpdateTask(void *arg){
 
     send_message(msg);
 
-}
-
-int get_unique_usernames(char usernames[9][256], char out[9][256]) {
-    int count = 0;
-
-    for (int i = 0; i < 9; i++) {
-        if (usernames[i][0] == '\0') continue;  // skip empty
-
-        // check if already added
-        bool exists = false;
-        for (int j = 0; j < count; j++) {
-            if (strcmp(out[j], usernames[i]) == 0) {
-                exists = true;
-                break;
-            }
-        }
-
-        if (!exists) {
-            strcpy(out[count], usernames[i]);
-            count++;
-        }
-    }
-
-    return count;
-}
-
-
-void BuildingPlaceTask(void *arg){
-    BuildPlacement us=*(BuildPlacement *) arg;
-    
-    pthread_mutex_lock(&GlobalCache->lock);
-    User* u=cache_get_user(GlobalCache,us.username);
-
-    double pixelsPerUnit = 512.0 / 7.5;   // ≈ 68.2666667
-    double px = (us.position[0]+3.75f) * pixelsPerUnit;
-    double py = (us.position[2]+3.75f) * pixelsPerUnit;
-
-    int pxf=(int)px;
-    int pyf=(int)py;
-
-    double xchunk=pxf/512.0;
-    double ychunk=pyf/512.0;
-
-    int xfloored=(int)xchunk;
-    int yfloored=(int)ychunk;
-
-    int tilepixelx=pxf - 512*xfloored;
-    int tilepixely=pyf - 512*yfloored;
-
-    Tile* focusTile = cache_get_tile(GlobalCache, xfloored, yfloored);
-
-    bool enoughRoom=canplacebuilding(
-        focusTile->Buffer,
-        BuildingTemplates[bTypeFromString(us.buildingname)],
-        tilepixelx,tilepixely
-    );
-    // printf("hello");
-
-    //add the building to the tile
-    if(enoughRoom){
-        cache_addbuilding_tile(focusTile,
-            tilepixelx,
-            tilepixely,
-            BuildingTemplates[bTypeFromString(us.buildingname)]
-        );
-    }
-    int count=focusTile->buildings.count;
-    int ServerId=focusTile->buildings.list[count-1]->base.ServerId;
-    printf("%d\n",ServerId);
-    pthread_mutex_unlock(&GlobalCache->lock);
-
-    //message the all users observing the tile
-    char uniquenames[9][256];
-    int uniquecount=get_unique_usernames(focusTile->usernames,uniquenames);
-
-    char informPart[512];
-    informPart[0] = '\0';  // start empty
-    strcat(informPart, "\"inform\":[");
-    for (int u = 0; u < uniquecount; u++) {
-        strcat(informPart, "\"");
-        strcat(informPart, uniquenames[u]);
-        strcat(informPart, "\"");
-        if (u < uniquecount - 1) strcat(informPart, ",");
-    }
-    strcat(informPart, "]");
-
-    char detailsPart[512];
-    snprintf(
-        detailsPart, sizeof(detailsPart),
-        "\"details\":{"
-            "\"px\":%d,"
-            "\"py\":%d,"
-            "\"cx\":%d,"
-            "\"cy\":%d,"
-            "\"ServerId\":%d,"
-            "\"building\":\"%s\""
-        "}",
-        tilepixelx,
-        tilepixely,
-        xfloored,
-        yfloored,
-        ServerId,
-        us.buildingname
-    );
-
-    char msg[1024];
-    snprintf(
-        msg, sizeof(msg),
-        "{\"type\":\"BuildingPlaced\",%s,%s}",
-        informPart,
-        detailsPart
-    );
-
-    send_message(msg);
 }

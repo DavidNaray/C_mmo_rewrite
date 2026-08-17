@@ -122,6 +122,7 @@ pipeMsgs.on('data', (data) => {
                     io.to(sockid).emit('buildingplacementhover',{"RequestMetaData":msg});
                     break;
                 case "BuildingPlaced":
+                    // console.log(msg.inform)
                     for(const username of msg.inform){
                         sockid=usersocketMap.get(username)
                         io.to(sockid).emit('BuildingPlaced',msg.details);
@@ -129,7 +130,7 @@ pipeMsgs.on('data', (data) => {
                     
                     break;
                 case "BuildingConstructionUpdate":
-                    console.log(msg)
+                    // console.log(msg)
                     for(const username of msg.inform){
                         sockid=usersocketMap.get(username)
                         io.to(sockid).emit('BuildingUpdate',msg.details);

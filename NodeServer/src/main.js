@@ -152,6 +152,11 @@ pipeMsgs.on('data', (data) => {
                     sockid=usersocketMap.get(msg.username)
                     io.to(sockid).emit('RegimenUpdate',{"slot":msg.slot,"done":msg.done});
                     break;
+                case "DeployLocs":
+                    sockid=usersocketMap.get(msg.username)
+                    io.to(sockid).emit('DeployLocs',{names:msg.names});
+                    // console.log("city centers",msg)
+                    break;
                 default:;
             }
         }catch(e){console.log("parse error")}
@@ -310,6 +315,13 @@ io.on('connection', async (socket) => {
 
     })
 
+    socket.on('GetDeployLocations',async() => {
+        if(!socket.authenticated){console.log("unauthorised tile request");return;}
+        pipe.write(JSON.stringify({
+            type: "GetDeployLocations",
+            username: socket.username.toString(),
+        }) + "\n");
+    })
 
     socket.on('DailyReward',async() => {
         if(!socket.authenticated){console.log("unauthorised tile request");return;}

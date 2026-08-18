@@ -502,3 +502,4 @@ void BuildingPosUpdateTask(void *arg){
     send_message(msg);
 
 }
+

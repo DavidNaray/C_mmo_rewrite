@@ -50,6 +50,7 @@ export function setupSocketConnection(){
         socket.emit("constructable")//request whats buildable
         socket.emit("unitTypes")//what is trainable
         socket.emit("trainable")//request whats in training
+        socket.emit("GetDeployLocations")
     });
 
     socket.on("TechTreeUpdate", (response) => {HandleTechTree(response.details)})
@@ -69,6 +70,7 @@ export function setupSocketConnection(){
     socket.on("BuildingUpdate", async (response) => {HandleBuildingUpdate(response) })
     socket.on("BuildOperational", async (response) => {HandleBuildingShaderChange(response)})
 
+    socket.on("DeployLocs", async (response) => {HandleDeployLocs(response)})
 
     socket.on("TickUpdate",async (response)=>{
         const replacements=response.replacements
@@ -147,6 +149,61 @@ export function getUserTileData(){
     const username = localStorage.getItem("username");
     socket.emit('GetTiles' )
 }
+
+function HandleDeployLocs(Locs){
+    const To=UImanager.getDeployTo();
+    while (To.firstChild) {
+        To.removeChild(To.firstChild);
+    }
+
+    let DeployBox=document.createElement("div");
+    DeployBox.style.backgroundColor="rgb(188, 187, 187)";
+    DeployBox.style.flex = "1";
+    // DeployBox.style.height = "100%";
+    DeployBox.style.display = "flex";
+    DeployBox.style.alignItems = "center";
+
+    let DeployText = document.createElement("div");
+    DeployText.innerText = "Deploy to: ";
+    DeployText.style.fontSize="clamp(4px, 60cqh, 32px);";
+    // DeployText.style.lineHeight="0";
+    DeployText.style.marginRight = "max(8px, 0.6vw)";
+
+    DeployBox.appendChild(DeployText);
+
+
+
+    if(Locs.names.length>0){
+
+        let OptionsBox = document.createElement("select");
+        OptionsBox.style.flex = "1";
+        OptionsBox.style.height = "100%";
+        OptionsBox.style.backgroundColor = "rgb(100, 100, 100)";
+        // OptionsBox.style.border = "none";
+        OptionsBox.style.marginRight = "max(3px, 0.2vw)";
+
+        Locs.names.forEach(opt => {
+            let o = document.createElement("option");
+            o.value = opt;
+            o.textContent = opt;
+            OptionsBox.appendChild(o);
+        });
+        
+        DeployBox.appendChild(OptionsBox);
+    }
+    else{
+        let OptionsBox = document.createElement("div");
+        OptionsBox.style.flex = "1";
+        OptionsBox.style.height = "100%";
+        OptionsBox.style.backgroundColor = "rgb(100, 100, 100)";
+        // OptionsBox.style.border = "none";
+        OptionsBox.style.marginRight = "max(3px, 0.2vw)";
+        DeployBox.appendChild(OptionsBox);
+    }
+
+    To.appendChild(DeployBox)
+}
+
 
 function makeResourceUpdate(resources){
     const political={Rate:resources.Political.Rate,Total:Math.floor(resources.Political.Total)};
@@ -586,7 +643,7 @@ async function HandlePlaceBuilding(Building){
         const To=UImanager.getCConBody()
 
         let option=document.createElement("div");
-        option.myParam=[Building.ServerId] //reference to the appropriate regimen record on server
+        option.myParam=[Building.ServerId]
 
         styleOuterDiv(option);
         AddImageToElem(option,stringintoURL(Building.building));
@@ -650,6 +707,15 @@ async function HandleBuildingShaderChange(Update){
         if(child.myParam!=Update.ServerId){continue}
         
         child.remove();
+    }
+
+    // console.log("NAMEMMEMEEE,",building)
+    switch(building){
+        case "TownHall":
+            socket.emit("GetDeployLocations")
+            break;
+        default:
+            console.log("other finished building")
     }
 }
 

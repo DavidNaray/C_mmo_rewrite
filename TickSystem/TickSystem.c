@@ -30,6 +30,7 @@ void initBuckets() {
     TickS.currBucket=0;
 }
 
+
 void IncrementTickSystem(){
     Bucket* b = &TickS.Buckets[TickS.currBucket];
 
@@ -113,7 +114,6 @@ void IncrementTickSystem(){
             );
 
             send_message(msg);
-
 
             //remove the build order
             for (int j = i; j < b->Constructions.count - 1; j++) {

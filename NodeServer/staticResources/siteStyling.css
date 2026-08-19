@@ -144,6 +144,7 @@ html, body {
 .RTxt{
   display:flex;
   padding:max(4px, 0.3vw);
+  /* height:calc( max(15px,1vw)); */
   width:calc(100% - max(12px, 0.9vw));
   background-color: rgb(188, 187, 187);
   border-radius: max(2px, 0.15vw) max(2px, 0.15vw);

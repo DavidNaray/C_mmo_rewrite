@@ -152,21 +152,18 @@ export function getUserTileData(){
 
 function HandleDeployLocs(Locs){
     const To=UImanager.getDeployTo();
-    while (To.firstChild) {
-        To.removeChild(To.firstChild);
-    }
+
+    while (To.firstChild) {To.removeChild(To.firstChild);}
 
     let DeployBox=document.createElement("div");
     DeployBox.style.backgroundColor="rgb(188, 187, 187)";
     DeployBox.style.flex = "1";
-    // DeployBox.style.height = "100%";
     DeployBox.style.display = "flex";
     DeployBox.style.alignItems = "center";
 
     let DeployText = document.createElement("div");
     DeployText.innerText = "Deploy to: ";
-    DeployText.style.fontSize="clamp(4px, 60cqh, 32px);";
-    // DeployText.style.lineHeight="0";
+    DeployText.style.fontSize="max(15px,1vw)";
     DeployText.style.marginRight = "max(8px, 0.6vw)";
 
     DeployBox.appendChild(DeployText);
@@ -180,14 +177,24 @@ function HandleDeployLocs(Locs){
         OptionsBox.style.height = "100%";
         OptionsBox.style.backgroundColor = "rgb(100, 100, 100)";
         // OptionsBox.style.border = "none";
-        OptionsBox.style.marginRight = "max(3px, 0.2vw)";
+        // OptionsBox.style.marginRight = "max(3px, 0.2vw)";
 
         Locs.names.forEach(opt => {
             let o = document.createElement("option");
             o.value = opt;
             o.textContent = opt;
+
+            if(o.textContent==Locs.selected){
+                o.selected=true;
+            }
+
             OptionsBox.appendChild(o);
         });
+
+        if(Locs.names.length==1){
+            OptionsBox.options[0].selected=true;
+            socket.emit("setDeployCity", { RequestMetaData: {city:Locs.names[0]} });
+        }
         
         DeployBox.appendChild(OptionsBox);
     }

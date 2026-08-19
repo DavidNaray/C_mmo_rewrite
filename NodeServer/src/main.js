@@ -154,8 +154,7 @@ pipeMsgs.on('data', (data) => {
                     break;
                 case "DeployLocs":
                     sockid=usersocketMap.get(msg.username)
-                    io.to(sockid).emit('DeployLocs',{names:msg.names});
-                    // console.log("city centers",msg)
+                    io.to(sockid).emit('DeployLocs',{names:msg.names,selected:msg.selected});
                     break;
                 default:;
             }
@@ -320,6 +319,16 @@ io.on('connection', async (socket) => {
         pipe.write(JSON.stringify({
             type: "GetDeployLocations",
             username: socket.username.toString(),
+        }) + "\n");
+    })
+
+    socket.on('setDeployCity',async({RequestMetaData}) => {
+        console.log(RequestMetaData.city)
+        if(!socket.authenticated){console.log("unauthorised tile request");return;}
+        pipe.write(JSON.stringify({
+            type: "DeployCitySet",
+            username: socket.username.toString(),
+            name:RequestMetaData.city
         }) + "\n");
     })
 

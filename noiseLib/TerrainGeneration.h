@@ -40,19 +40,6 @@ extern fnl_state warp;
 extern fnl_state MountainNoise;
 extern fnl_state PlainsNoise;
 
-typedef struct Node{
-    int idx;
-    float priority; // 0 = equal, >0 = brighter
-    struct Node *next;
-} Node;
-
-typedef struct {
-    Node *head;
-    Node *tail;
-} NodeQueue;
-
-
-
 
 TerrainSetup SetupTerrainFields(int xR,int yR,char nT[],float f,int s, char root[]);
 void ApplyTerrainFields();

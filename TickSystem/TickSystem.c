@@ -10,8 +10,6 @@
 #include <cJSON.h>
 #include <windows.h>
 
-
-
 TickSystem TickS;
 
 void initBucket(Bucket* b) {
@@ -252,6 +250,7 @@ void AddConstructionOrder(int index,int cx,int cy,int px,int py) {
     // printf("added buildingorder to bucket\n");
 }
 
+
 bool user_exists_in_any_bucket(char* username) {
     for (int b = 0; b < 5; b++) {
         UTList* ul = &TickS.Buckets[b].UnitTrainings;
@@ -261,7 +260,6 @@ bool user_exists_in_any_bucket(char* username) {
     }   }   }
     return false;
 }
-
 
 void AddUserWithTrainingOrders(char* username) {
 

@@ -12,55 +12,14 @@
 #include "../MongoDBReadWriteCache/Schema/TileSchema.h"
 #include "../MongoDBReadWriteCache/Cache.h"
 
+#include <limits.h> // Required for INT_MAX and INT_MIN
+
 TerrainSetup TSetup;   
 fnl_state noise;    
 fnl_state warp;
 
 fnl_state MountainNoise;  
 fnl_state PlainsNoise;  
-
-
-void push_Node(NodeQueue* q, int index, float prio) {
-    Node* n = malloc(sizeof(Node));
-    n->idx = index;
-    n->priority = prio;
-    n->next = NULL;
-
-    // empty queue
-    if (q->head == NULL) {q->head = n;q->tail = n;return;}
-
-    // insert at head if priority is smallest
-    if (prio < q->head->priority) {
-        n->next = q->head;
-        q->head = n;
-        return;
-    }
-
-    // find insertion point
-    Node* cur = q->head;
-    while (cur->next != NULL && cur->next->priority <= prio) {
-        cur = cur->next;
-    }
-
-    // insert after cur
-    n->next = cur->next;
-    cur->next = n;
-
-    // update tail if inserted at end
-    if (n->next == NULL){q->tail = n;}
-}
-
-
-Node* pop_Node(NodeQueue *q) {
-    Node *node = q->head;
-    if (node == NULL) {/*theres nothing to get so bail*/return NULL;}
-
-    q->head = node->next;
-    if (q->head == NULL) {/*if the node after next is null, tail must be null*/q->tail = NULL;}
-
-    return node;
-}
-
 
 
 TerrainSetup SetupTerrainFields(int xR, int yR, char nT[], float f, int s, char root[]){
@@ -362,7 +321,7 @@ void ApplyBiome(bool* BoundaryMask,
         }
         else if(influence.ocean>oceanThreshold){/*blue ocean*/
             Walkpixels[i] = (pixel_t) {0,0,255};
-            tile->Buffer[y][x].cost=0;
+            tile->Buffer[y][x].cost=INT_MAX;//0;
             tile->Buffer[y][x].walkability=false;
         }
         else{/*walkable-white*/
@@ -471,6 +430,8 @@ void GenerateTerrainTile(int x,int y,char* username){
     // printf("reached applybiome");
     ApplyBiome(BoundaryMask,influences,pixels,Heightpixels,Walkpixels,tile,x,y);
 
+    AbstractMapCreate(tile,true);
+    
     //add to the cache the tile
     // pthread_mutex_lock(&GlobalCache->lock);
     // printf("adding tile to cache\n");

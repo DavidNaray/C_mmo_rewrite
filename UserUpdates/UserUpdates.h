@@ -25,5 +25,4 @@ void TrainingUpdateTask(void *arg);
 
 void NewRegimenTask(void *arg);
 
-void GetUserTiles(void *arg);
 #endif

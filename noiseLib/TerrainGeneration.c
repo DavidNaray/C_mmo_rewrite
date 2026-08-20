@@ -430,7 +430,7 @@ void GenerateTerrainTile(int x,int y,char* username){
     // printf("reached applybiome");
     ApplyBiome(BoundaryMask,influences,pixels,Heightpixels,Walkpixels,tile,x,y);
 
-    AbstractMapCreate(tile,true);
+    AbstractMapCreate(tile,false);
     
     //add to the cache the tile
     // pthread_mutex_lock(&GlobalCache->lock);

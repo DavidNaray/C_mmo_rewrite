@@ -62,6 +62,8 @@ ExtractRegion* extractRegion(WalkMapPoint srcbuffer[512][512], int StartX, int S
     ExtractRegion* cut = malloc(sizeof(ExtractRegion) + count * sizeof(WalkMapPoint));
     cut->width=segW;
     cut->height=segH;
+    cut->originX = StartX;
+    cut->originY = StartY;
 
     //copies over the segments of rows from the srcbuffer (faster than x,y iteration)
     for (int y = 0; y < segH; y++) {
@@ -115,8 +117,8 @@ ExtractRegion* combineSegments(
 
     out->width   = width;
     out->height  = height;
-    // out->originX = minX;
-    // out->originY = minY;
+    out->originX = minX;
+    out->originY = minY;
 
     // make sure to set things as unwalkable
     for (int i = 0; i < width * height; i++) {
@@ -150,9 +152,11 @@ ExtractRegion* combineSegments(
     return out;
 }
 
-void AStarPathCost(
+AStarResult* AStarPathCost(
     ExtractRegion* AreaBuffer,
-    WalkMapPoint startP,WalkMapPoint goalP,
-    bool flag) {
+    point startP,point goalP
+) {
+    AStarResult* r=malloc(sizeof(AStarResult) + 1*sizeof(PathPoint));;
+    return r;
 
 }

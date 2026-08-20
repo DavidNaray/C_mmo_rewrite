@@ -6,8 +6,8 @@
 typedef struct {
     int height;
     int width;
-    // int originX;
-    // int originY;
+    int originX;
+    int originY;
     WalkMapPoint Buffer[];
 } ExtractRegion;
 
@@ -23,6 +23,16 @@ typedef struct {
 } PriorityQueue;
 
 
+typedef struct {
+    int Tile[2];
+    point pixel;
+} PathPoint;
+
+typedef struct {
+    int cost;
+    PathPoint route[];
+} AStarResult;
+
 ExtractRegion* extractRegion(WalkMapPoint srcbuffer[512][512], int StartX, int StartY, int segW, int segH);
 
 ExtractRegion* combineSegments(
@@ -30,10 +40,9 @@ ExtractRegion* combineSegments(
     const ExtractRegion* bufB, int posBx, int posBy
 );
 
-void AStarPathCost(
+AStarResult* AStarPathCost(
     ExtractRegion* AreaBuffer,
-    WalkMapPoint startP,WalkMapPoint goalP,
-    bool flag
+    point startP,point goalP
 );
 
 #endif

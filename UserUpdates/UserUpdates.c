@@ -4,8 +4,8 @@
 #include "../MongoDBReadWriteCache/Schema/UserBreakdown.h"
 #include "../MongoDBReadWriteCache/Schema/TileSchema.h"
 #include "../MongoDBReadWriteCache/ReadUser.h"
-#include "../MongoDBReadWriteCache/UserUtils.h"
 #include "../MongoDBReadWriteCache/Cache.h"
+#include "../TickSystem/TickSystem.h"
 #include <mongoc/mongoc.h>
 
 #include <cJSON.h>
@@ -214,6 +214,8 @@ void NewRegimenTask(void *arg){
             );
             send_message(msg);
         }
+    
+        AddUserWithTrainingOrders(us.username);
     }
 }
 
@@ -402,103 +404,5 @@ void ConstructionUpdateTask(void *arg){
     free(final);
     free(arg);
     cJSON_Delete(Build_json);
-
-}
-
-bool canplacebuilding(WalkMapPoint buffer[512][512], Building template,int xp,int yp){
-    //building width and height
-    int bw = template.base.width;
-    int bh = template.base.height;
-
-    //bounds
-    int left   = xp - bw/2;
-    int right  = xp + bw/2;
-    int top    = yp - bh/2;
-    int bottom = yp + bh/2;
-    if (left < 0 || right >= 512 || top < 0 || bottom >= 512){return false;}
-
-    for (int y = top; y <= bottom; y++) {
-        for (int x = left; x <= right; x++) {
-            WalkMapPoint *cell = &buffer[y][x];
-            if (!cell->walkability){return false;}
-            if (cell->object != NULL){return false;}
-    }   }
-
-    return true;
-}
-
-void BuildingPosUpdateTask(void *arg){
-
-    //you have the username and pos
-    //you can get the chunk it belongs to by its offset to the users origin tile
-
-    //tiles are 7.5 tiles across, centered on the origin so so thats +3.75 since its moved left
-        //in other words seeing 0,0,0 is actually 3.75,0,3.75
-
-    //the -0.00001f is to prevent a bug since the edges are shifted so 3.75 turns to 7.5 meaning /7.5=1
-        //but this means the exact right edge of tile 0 shifts into tile 1, which will cause problems
-
-    BuildPlacement us=*(BuildPlacement *) arg;
-    
-    pthread_mutex_lock(&GlobalCache->lock);
-    User* u=cache_get_user(GlobalCache,us.username);
-
-    double pixelsPerUnit = 512.0 / 7.5;   // ≈ 68.2666667
-    double px = (us.position[0]+3.75f) * pixelsPerUnit;
-    double py = (us.position[2]+3.75f) * pixelsPerUnit;
-
-    int pxf=(int)px;
-    int pyf=(int)py;
-    // printf("%d,%d\n",pxf,pyf);
-
-    double xchunk=pxf/512.0;//(us.position[0] + 3.75f - 0.00001f) / 7.5f;
-    double ychunk=pyf/512.0;//(us.position[2] + 3.75f - 0.00001f) / 7.5f;
-
-    int xfloored=(int)xchunk;
-    int yfloored=(int)ychunk;
-
-    int tilepixelx=pxf - 512*xfloored;
-    int tilepixely=pyf - 512*yfloored;
-    // printf("%d,%d\n",xfloored,yfloored);
-    Tile* focusTile = cache_get_tile(GlobalCache, xfloored, yfloored);
-    pthread_mutex_unlock(&GlobalCache->lock);
-
-    //get the info for the appropriate building
-    //and buffer for the tile
-    //get the pixel positions
-
-    // int xPixel=(xchunk - xfloored);
-    // int yPixel=(ychunk - yfloored);
-
-    bool permission=canplacebuilding(
-        focusTile->Buffer,
-        BuildingTemplates[bTypeFromString(us.buildingname)],
-        tilepixelx,tilepixely
-    );
-
-    printf("commed the id %s\n",us.taskId);
-    char msg[256];
-    snprintf(
-        msg, sizeof(msg),
-        "{\"type\":\"PlacementMovement\","
-        "\"username\":\"%s\","
-        "\"permission\":%d,"
-        "\"id\":\"%s\","
-        "\"px\":%d,"
-        "\"py\":%d,"
-        "\"cx\":%d,"
-        "\"cy\":%d,"
-        "\"building\":\"%s\"}",
-        us.username,
-        permission,
-        us.taskId,
-        tilepixelx,
-        tilepixely,
-        xfloored,
-        yfloored,
-        us.buildingname
-    );
-
-    send_message(msg);
 
 }

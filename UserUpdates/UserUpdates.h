@@ -16,21 +16,9 @@ typedef struct {
     int units[3]; // composition array
 } RegimentTemplate;
 
-typedef struct {
-    char buildingname[32];
-    double position[3]; // composition array
-    char username[256];
-    char taskId[17];
-} BuildPlacement;
-
 void TechUpdateTask(void *arg);
 
-
 void ConstructionUpdateTask(void *arg);
-
-void BuildingPosUpdateTask(void *arg);
-
-// void BuildingPlaceTask(void *arg);
 
 
 void TrainingUpdateTask(void *arg);

@@ -329,6 +329,10 @@ void ApplyBiome(bool* BoundaryMask,
             tile->Buffer[y][x].walkability=true;
             tile->Buffer[y][x].cost=1;
         }
+        tile->Buffer[y][x].x=x;
+        tile->Buffer[y][x].y=y;
+        tile->Buffer[y][x].tx=offsetX;
+        tile->Buffer[y][x].ty=offsetY;
 
     }   }
     

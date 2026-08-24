@@ -150,7 +150,7 @@ static inline float heuristic(WalkMapPoint startP,WalkMapPoint goalP){
     int x1=(512*startP.tx) + startP.x;
     int y1=(512*startP.ty) + startP.y;
     int x2=(512*goalP.tx ) + goalP.x;
-    int y2=(512*goalP.tx ) + goalP.x;
+    int y2=(512*goalP.ty ) + goalP.y;
     
     float dx = x2 - x1;
     float dy = y2 - y1;
@@ -273,6 +273,7 @@ AStarResult* AStarPathCost(
     r->cost = gScore[goalIdx];
     r->count = count;
 
+    // printf("%d\n",r->cost);
     cur = goalIdx;
     int writeIndex = count - 1;
 
@@ -282,4 +283,212 @@ AStarResult* AStarPathCost(
     }
     
     return r;
+}
+
+
+static SubgridPortalRecord* findAbstractPortal(
+    AbstractMap* map,
+    WalkMapPoint p
+) {
+
+    int subx = p.x / 32;
+    int suby = p.y / 32;
+
+    if (subx < 0 || subx >= 16 ||
+        suby < 0 || suby >= 16
+    ) {return NULL;}
+
+    SubgridRecord* rec = &map->subgrids[suby][subx];
+
+    for (int i = 0; i < rec->portalCount; i++) {
+        SubgridPortalRecord* portal =&rec->portals[i];
+
+        if (portal->localPortal.x  == p.x &&
+            portal->localPortal.y  == p.y &&
+            portal->localPortal.tx == p.tx &&
+            portal->localPortal.ty == p.ty) {
+
+            return portal;
+        }
+    }
+
+    return NULL;
+}
+
+static int findAbstractSearchPoint(
+    WalkMapPoint* points,
+    int count,
+    WalkMapPoint p
+) {
+    for (int i = 0; i < count; i++) {
+        if (points[i].x  == p.x &&
+            points[i].y  == p.y &&
+            points[i].tx == p.tx &&
+            points[i].ty == p.ty
+        ) {return i;}
+    }
+    return -1;
+}
+
+AStarResult* AbstractAStar(
+    WalkMapPoint startP,WalkMapPoint goalP
+) {
+    //rather than using a buffer, traverse abstractmaps
+    PriorityQueue open={ .head=NULL, .tail=NULL, .size=0 };
+    bool reached=false;
+
+    // dynamic search state
+    WalkMapPoint* points = NULL;
+    float* gScores = NULL;
+    int* cameFrom = NULL;
+    bool* closed = NULL;
+
+    int count = 0;
+    int capacity = 16;
+
+    points = malloc(sizeof(WalkMapPoint) * capacity);
+    gScores = malloc(sizeof(float) * capacity);
+    cameFrom = malloc(sizeof(int) * capacity);
+    closed = calloc(capacity,sizeof(bool));
+
+    points[0] = startP;
+    gScores[0] = 0.0f;
+    cameFrom[0] = -1;
+    closed[0] = false;
+
+    count = 1;
+
+    push_Node(&open,startP,heuristic(startP, goalP));
+
+    int currentIndex;
+    while (open.size>0) {
+
+        //get low fscore node
+        Node* node = pop_Node(&open);
+        WalkMapPoint currentP = node->val;
+        free(node);
+
+        //Find its search-state index
+        currentIndex = findAbstractSearchPoint(points,count,currentP);
+        if (currentIndex == -1) {continue;}
+
+        //has it been visited / set the visited now
+        if (closed[currentIndex]) {continue;}
+        closed[currentIndex] = true;
+
+        //goal reached
+        if (currentP.x  == goalP.x &&
+            currentP.y  == goalP.y &&
+            currentP.tx == goalP.tx &&
+            currentP.ty == goalP.ty
+        ) {reached=true;break;}
+
+        // Find which Tile owns currentP
+        pthread_mutex_lock(&GlobalCache->lock);
+        Tile* currentTile =cache_get_tile(GlobalCache,currentP.tx,currentP.ty);
+        pthread_mutex_unlock(&GlobalCache->lock);
+        if (!currentTile) {continue;}
+
+        //Find current portal in that tile
+        SubgridPortalRecord* currentPortal= findAbstractPortal(&currentTile->abstractMap,currentP);
+        if (!currentPortal) {continue;}
+
+        //go through the connections of the current portal
+        for (int a = 0;a < currentPortal->adjCount;a++) {
+            PortalAdjacency* adjacency= &currentPortal->adj[a];
+            WalkMapPoint neighbour= adjacency->portal;
+            int edgeCost= adjacency->cost;
+
+            int neighbourIndex= findAbstractSearchPoint(points,count,neighbour);
+
+            //this neighbour isnt accounted for so add to points etc
+            if (neighbourIndex == -1) {
+                // Grow search arrays
+                if (count == capacity) {
+                    capacity *= 2;
+
+                    points = realloc(points,sizeof(WalkMapPoint) *capacity);
+                    gScores = realloc(gScores,sizeof(float) *capacity);
+                    cameFrom = realloc(cameFrom,sizeof(int) *capacity);
+
+                    closed = realloc(closed,sizeof(bool) *capacity);
+                    //set the values after the old closed to false
+                    memset(
+                        &closed[count],
+                        0,
+                        sizeof(bool) *(capacity - count)
+                    );
+                }
+
+                neighbourIndex = count++;
+
+                points[neighbourIndex] =neighbour;
+                gScores[neighbourIndex] =FLT_MAX;
+                cameFrom[neighbourIndex] =-1;
+                closed[neighbourIndex] =false;
+            }
+
+            //has this node been visited
+            if (closed[neighbourIndex]) {continue;}
+
+            //get the route cost for this node
+            float tentativeG =gScores[currentIndex] + edgeCost;
+
+            if (tentativeG < gScores[neighbourIndex]) {
+                cameFrom[neighbourIndex] =currentIndex;
+                gScores[neighbourIndex] =tentativeG;
+
+                float fScore =tentativeG +heuristic(neighbour,goalP);
+
+                push_Node(&open,neighbour,fScore);
+            }
+        }
+
+        
+    }
+
+    //there is a path
+    if(reached){
+        //rebuild route
+        int routeCount = 0;
+        int current = currentIndex;
+
+        while (current != -1) {
+            routeCount++;
+            current = cameFrom[current];
+        }
+
+        AStarResult* result =malloc(sizeof(AStarResult)+routeCount * sizeof(WalkMapPoint));
+        result->cost = gScores[currentIndex];
+        result->count = routeCount;
+
+        current = currentIndex;
+
+        int writeIndex = routeCount - 1;
+
+        while (current != -1) {
+            result->route[writeIndex--] =points[current];
+            current =cameFrom[current];
+        }
+
+        free(points);
+        free(gScores);
+        free(cameFrom);
+        free(closed);
+
+        return result;
+    }
+
+    //no path
+    free(points);
+    free(gScores);
+    free(cameFrom);
+    free(closed);
+
+    AStarResult* result = malloc(sizeof(AStarResult));
+
+    result->cost = INT_MAX;
+    result->count = 0;
+
+    return result;
 }

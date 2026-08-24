@@ -42,4 +42,6 @@ AStarResult* AStarPathCost(
     WalkMapPoint startP,WalkMapPoint goalP
 );
 
+AStarResult* AbstractAStar(WalkMapPoint startP,WalkMapPoint goalP);
+
 #endif

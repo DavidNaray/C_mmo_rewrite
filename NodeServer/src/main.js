@@ -152,6 +152,10 @@ pipeMsgs.on('data', (data) => {
                     sockid=usersocketMap.get(msg.username)
                     io.to(sockid).emit('RegimenUpdate',{"slot":msg.slot,"done":msg.done});
                     break;
+                case "DelTrainSuccess":
+                    sockid=usersocketMap.get(msg.username)
+                    io.to(sockid).emit('DelTrain',{"slot":msg.slot});
+                    break;
                 case "DeployLocs":
                     sockid=usersocketMap.get(msg.username)
                     console.log("supposed locations",msg.username,msg.selected)
@@ -430,7 +434,15 @@ io.on('connection', async (socket) => {
 
     socket.on('RegimenDeploy',async ({RequestMetaData}) => {});
 
-    socket.on('DestroyRegimen',async ({RequestMetaData}) => {});
+    socket.on('DestroyRegimen',async (slot) => {
+        if(!socket.authenticated){console.log("unauthorised tile request");return;}
+        console.log(slot)
+        pipe.write(JSON.stringify({
+            type: "DestroyRegimen",
+            username: socket.username,
+            regSlot:slot,
+        }));
+    });
     
 
     // Handle disconnect

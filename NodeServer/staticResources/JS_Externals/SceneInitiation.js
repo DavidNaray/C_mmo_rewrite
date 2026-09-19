@@ -63,7 +63,7 @@ export function setupSocketConnection(){
     socket.on("RegLoad", (response) => {HandleRegLoad(response.details.regimens)})
     socket.on("RegimenReady", (response) => {console.log("RegimenReady",response)})
     socket.on("RegimenUpdate", (response) => {HandleRegUpdate(response);})
-    
+    socket.on("DelTrain", (response) => {RemoveTraining(response);})
 
     socket.on("buildingplacementhover", (response) => {HandleMovePlacementBuilding(response.RequestMetaData)})
     socket.on("BuildingPlaced", async (response) => { await HandlePlaceBuilding(response)})
@@ -444,12 +444,12 @@ function HandleNewRegimen(NewRegimen){
     styleInnerContainer(innerContainer);
     option.appendChild(innerContainer);
 
-    TitleAndCancelSection(innerContainer,NewRegimen.regName);
+    TitleAndCancelSection(innerContainer,NewRegimen.regName,NewRegimen.slot);
 
     let BotContainer=document.createElement("div");
     StyleBotContainer(BotContainer);
     ProgressBar(BotContainer);
-    // DeployButton(BotContainer);
+    DeployButton(BotContainer,NewRegimen.slot);
     innerContainer.appendChild(BotContainer);
 
     To.appendChild(option);
@@ -466,6 +466,17 @@ function HandleRegUpdate(Update){
         //access the progress bar track 
         const bar=child.children[1].children[1].children[0].children[1].children[0]
         bar.style.width=`${Update.done}%`;
+    }
+}
+
+function RemoveTraining(slot){
+    const To=UImanager.getTBRegBody()
+    for (const elem of To.children) {
+        if(elem.myParam!=slot.slot){continue}
+
+        //destroy the element
+        console.log(elem.myParam)
+        elem.remove()
     }
 }
 
@@ -519,21 +530,6 @@ function HandleAdjustRegimenCount(AdjustRegimenCount){
 
     }
 
-}
-
-function HandleDelRegimen(HandleDelRegimen){
-    // console.log("HandleDelRegimen",HandleDelRegimen)
-    if(!HandleDelRegimen.Rid){return}
-    const Rid=HandleDelRegimen.Rid
-
-    const To=UImanager.getTBRegBody()
-
-    for (const elem of To.children) {
-        if(elem.myParam!=Rid){continue}
-
-        //destroy the element
-        elem.remove()
-    }
 }
 
 

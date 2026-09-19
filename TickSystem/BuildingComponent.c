@@ -112,7 +112,6 @@ void BuildingBenefit(Tile * ftile,Building* building){
         case StoneKeep:
             break;
         case TownHall:
-            // SetDeployCity();//set the building as a deployable location
             GetCityCenters(ftile->usernames[4]);//alert user of citycenters
             break;
         case warehouse:

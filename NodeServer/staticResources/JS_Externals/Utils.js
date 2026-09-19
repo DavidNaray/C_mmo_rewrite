@@ -1,3 +1,5 @@
+import {socket} from "./SceneInitiation.js"
+
 export function updateGridColumns() {
     try{
         // console.log("RAHHHHHHHHHHHHHHHHHHHHHHHHHH")
@@ -41,7 +43,7 @@ export function styleInnerContainer(elem){
     elem.style.rowGap="max(4px, 0.3vw)"
 }
 
-export function TitleAndCancelSection(elem, Title){
+export function TitleAndCancelSection(elem, Title,slot){
     let TCContainer=document.createElement("div");
     TCContainer.style.width="100%"
     TCContainer.style.height="100%"
@@ -64,6 +66,10 @@ export function TitleAndCancelSection(elem, Title){
     Destroy.style.backgroundImage="url('Icons/Cross.png')"
     Destroy.className="IconGeneral"
     Destroy.style.marginLeft="max(4px, 0.3vw)"
+
+    Destroy.addEventListener("click", function() {
+        socket.emit('DestroyRegimen',slot)
+    });
 
     TCContainer.appendChild(TopTitle);
     TCContainer.appendChild(Destroy);

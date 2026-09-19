@@ -44,9 +44,13 @@ void IncrementTickSystem(){
         User* u=cache_get_user(GlobalCache,ut->username);
         if (!u){continue;}
 
+        bool stillTraining = false;
+
         for (int j = 0; j < MAX_REGIMENS; j++) {
             RegimenTraining* rt = &u->regimenTrainingList.regimens[j];
             if(!rt->active || rt->deployable){continue;}//if false then nothing to do here
+
+            stillTraining = true;
 
             int totalProgress = 0;
             int totalFinish = 0;
@@ -96,6 +100,15 @@ void IncrementTickSystem(){
                 send_message(msg);
             }
 
+        }
+    
+        if(!stillTraining){
+            free(ut);
+            for (int k = i; k < b->UnitTrainings.count - 1; k++) {
+                b->UnitTrainings.list[k] = b->UnitTrainings.list[k + 1];
+            }
+            b->UnitTrainings.count--;
+            i--;
         }
     }
     pthread_mutex_unlock(&GlobalCache->lock);

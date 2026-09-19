@@ -168,33 +168,23 @@ function HandleDeployLocs(Locs){
 
     DeployBox.appendChild(DeployText);
 
-
-
     if(Locs.names.length>0){
-
         let OptionsBox = document.createElement("select");
         OptionsBox.style.flex = "1";
         OptionsBox.style.height = "100%";
         OptionsBox.style.backgroundColor = "rgb(100, 100, 100)";
-        // OptionsBox.style.border = "none";
-        // OptionsBox.style.marginRight = "max(3px, 0.2vw)";
 
         Locs.names.forEach(opt => {
             let o = document.createElement("option");
             o.value = opt;
             o.textContent = opt;
 
-            if(o.textContent==Locs.selected){
-                o.selected=true;
-            }
+            if(o.textContent==Locs.selected){o.selected=true;}
 
             OptionsBox.appendChild(o);
         });
 
-        if(Locs.names.length==1){
-            OptionsBox.options[0].selected=true;
-            socket.emit("setDeployCity", { RequestMetaData: {city:Locs.names[0]} });
-        }
+        socket.emit("setDeployCity", {RequestMetaData: {city: OptionsBox.value}});
         
         DeployBox.appendChild(OptionsBox);
     }
@@ -203,7 +193,6 @@ function HandleDeployLocs(Locs){
         OptionsBox.style.flex = "1";
         OptionsBox.style.height = "100%";
         OptionsBox.style.backgroundColor = "rgb(100, 100, 100)";
-        // OptionsBox.style.border = "none";
         OptionsBox.style.marginRight = "max(3px, 0.2vw)";
         DeployBox.appendChild(OptionsBox);
     }
@@ -716,14 +705,6 @@ async function HandleBuildingShaderChange(Update){
         child.remove();
     }
 
-    // console.log("NAMEMMEMEEE,",building)
-    switch(building){
-        case "TownHall":
-            socket.emit("GetDeployLocations")
-            break;
-        default:
-            console.log("other finished building")
-    }
 }
 
 //-------------------------------------------------------------

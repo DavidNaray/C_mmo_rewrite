@@ -154,6 +154,7 @@ pipeMsgs.on('data', (data) => {
                     break;
                 case "DeployLocs":
                     sockid=usersocketMap.get(msg.username)
+                    console.log("supposed locations",msg.username,msg.selected)
                     io.to(sockid).emit('DeployLocs',{names:msg.names,selected:msg.selected});
                     break;
                 default:;
@@ -314,14 +315,6 @@ io.on('connection', async (socket) => {
 
     })
 
-    socket.on('GetDeployLocations',async() => {
-        if(!socket.authenticated){console.log("unauthorised tile request");return;}
-        pipe.write(JSON.stringify({
-            type: "GetDeployLocations",
-            username: socket.username.toString(),
-        }) + "\n");
-    })
-
     socket.on('setDeployCity',async({RequestMetaData}) => {
         console.log(RequestMetaData.city)
         if(!socket.authenticated){console.log("unauthorised tile request");return;}
@@ -369,8 +362,7 @@ io.on('connection', async (socket) => {
 
         const types={
             "Archer":{Description:"Uses a bow to eliminate foes from afar",unlocked:true},
-            "Spearman":{Description:"A basic infantry unit",unlocked:true},
-            "Swordsman":{Description:"a durable infantry unit",unlocked:true}
+            "Spearman":{Description:"A basic infantry unit",unlocked:true}
         }
         socket.emit("availableUnitTypes",{types})
     })

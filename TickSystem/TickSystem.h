@@ -1,9 +1,10 @@
 #ifndef tick_H
 #define tick_H   // these form a guard
 
+#include "../MongoDBReadWriteCache/Schema/TileSchema.h"
 
 typedef struct {
-    int Destination[2][2];//tilex,y.. pixelx,y
+    WalkMapPoint Destination;
     char MovementId[17];
     
 } MovementOrders;

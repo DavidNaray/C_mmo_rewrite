@@ -11,83 +11,139 @@
     </script>
     <title>Home</title>
 </head>
-<body style="background-image: url('Icons/MedievalBackground.jpg');height:100%;width: 100%;background-repeat: no-repeat;background-size: cover;
-  display: flex;flex-direction: column;">
-    <!-- language changes -->
+<body style="background-image: url('Icons/MedievalBackground.jpg');
+    height:100%;width: 100%;background-repeat: no-repeat;background-size: cover;
+    display: flex;flex-direction: column;">
 
-    <div style="width: 100%;background-color: white;opacity: 0.5;text-align: center;">
-        <p style="font-size: max(2.5vw,2.5vh);display: inline-block;padding:0 max(1.25vw,1.25vh) 0 max(2.5vw,2.5vh)">English</p>
-        <p style="font-size: max(2.5vw,2.5vh);display: inline-block;padding:0 max(1.25vw,1.25vh) 0 max(1.25vw,1.25vh)">French</p>
-        <p style="font-size: max(2.5vw,2.5vh);display: inline-block;padding:0 max(2.5vw,2.5vh) 0 max(1.25vw,1.25vh)">...</p>
+    <!-- header -->
+    <div style="position:sticky;top:0;z-index: 100;">
+        <div id="navbar">
+            <!-- logo/title -->
+            <p style="color: goldenrod;font-size: max(3vw,3vh);">CIVS</p>
+
+            <!-- News/updates -->
+            <p style="color: goldenrod;font-size: max(2vw,2vh);margin-left:auto">NEWS</p>
+
+        </div>
+
+        <!-- rolling news banner -->
+        <div id="MessageSlider">
+            <div style="background-color: goldenrod;"></div>
+            <div id="SlidingMessages">
+                <div style="box-shadow:inset -3px 0 0 black;"></div>
+                <div id="clippingElement">
+                    <div id="slideElement"></div>
+                </div>
+                <div style="box-shadow:inset 3px 0 0 black;"></div>
+            </div>
+            <div style="background-color: goldenrod;"></div>
+        </div>
     </div>
 
-    <div style="display: grid;grid-template-columns: 1fr 1fr;height: 100%;">
 
-        <div style="width: 100%;height: 100%;display: flex;flex-direction: column;padding:0.5vw 0.25vw 0 0.5vw;width: calc(100% - 0.75vw);">
-            <div style="width: 100%;aspect-ratio: 1.5/1;background-color: pink;">video</div>
-            <div style="background-color: transparent;height: 100%;overflow: hidden;margin-top: 1vw;">
-                <p style="background-color: white;font-size: min(3vw,3vh);">
-                    Live web strategy game where everyone in the world is playing in one space, ally and trade with your neighbours, 
-                    conquer your enemies. Build your civilisation today
-                </p>
+    <!-- content -->
+    <div id="mainContent">
+        <!-- About content -->
+        <div id="about">
 
+            <p id="homepageabouttxt">
+                Live web strategy game where all players exist in one world. Trade with your Neighbours and Allies, 
+                Conquer your enemies. Build Your Civilisation Today.
+            </p>
+
+            <!-- showcase section -->
+            <div id="homepageShowcase">
+                <div class="showcaseBlock" >
+                    <div class="video-wrapper">
+                        <video autoplay muted loop playsinline class="Rvideo">
+                            <source src="./Icons/rotationShowcase.mp4" type="video/mp4">
+                        </video>
+                    </div>
+
+                    <p class="ppad">Experience an Infinite, Procedural 3D world you can orient yourself in.</p>
+                </div>
+                <div class="showcaseBlock" >
+                    <div class="video-wrapper">
+                        <video autoplay muted loop playsinline class="Rvideo">
+                            <source src="./Icons/placement.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <p class="ppad">Place buildings to cement your civilisation.</p>
+                </div>
+                <div class="showcaseBlock" >
+                    <div></div>
+                    <p class="ppad">Train Units you can directly control.</p>
+                </div>
+                <div class="showcaseBlock" >
+                    <div></div>
+                    <p class="ppad">Manage your resources to support diplomacy and campaigns.</p>
+                </div>
             </div>
         </div>
-        <!-- login/register -->
-        <div style="width: 100%;background-color: transparent;padding:0.5vw 0.5vw 0 0.25vw;width: calc(100% - 0.75vw);">
-            <div style="margin-top:2px;margin-bottom: 2px;">
-                <p style="font-size: min(3vw,3vh);display: inline-block;margin-right: 1vw;
-                        padding:0 0.5vw 0 0.5vw;background-color: white;
-                        border-radius: 0.5vw;">Register</p>
-                <p style="font-size: min(3vw,3vh);display: inline-block;margin-right: 1vw;
-                        padding:0 0.5vw 0 0.5vw;background-color: white;
-                        border-radius: 0.5vw;outline-color:black;outline: solid;outline-width: 2px;">Login</p>
-            </div>
-            <form id="RegisterForm" style="margin-top: 1vw; background-color: white;">
-                <label for="Username">Username:</label><br>
+        <!-- Login / Register content -->
+        <div style="width:100%;overflow: hidden;">
+        <div id="account">
+            <p style="color: white;display: inline;border-bottom: goldenrod 2px solid;">No Cookies! Only Your Session!</p>
+
+            <form id="RegisterForm" style="border:lightgray 2px solid;padding:3px;margin-top: max(0.5vw,0.5vh);">
+                <p style="display:inline-block;margin-bottom: 1px;border-bottom: 2px solid lightgray;">Register</p>
+                <br>
+
+                <label for="Username" style="font-size: max(1vw,1vh);">Username:</label><br>
                 <input type="text" id="Username" name="username" value="TestUser"><br>
                 
-                <label for="Password">Password:</label><br>
-                <input type="password" id="Password" name="password" value="PasswordWoo"><br><br>
+                <label for="Password" style="font-size: max(1vw,1vh);">Password:</label><br>
+                <input type="password" id="Password" name="password" value="PasswordWoo"><br>
                 
-                <button id="registerBtn" type="submit">Register</button>
+                <button id="registerBtn" type="submit" style="margin-top: max(0.5vw,0.5vh);">Register</button>
             </form>
             
-            <form id="LoginForm" style="margin-top: 1vw; background-color: white;">
-                <label for="LUsername">Username:</label><br>
+            <form id="LoginForm" style="border:lightgray 2px solid;padding:3px;margin-top: max(1vw,1vh);">
+                <p style="display:inline-block;margin-bottom: 1px;border-bottom: 2px solid lightgray;">Login</p>
+                <br>
+                
+                <label for="LUsername" style="font-size: max(1vw,1vh);">Username:</label><br>
                 <input type="text" id="LUsername" name="Lusername" value="TestUser"><br>
                 
-                <label for="LPassword">Password:</label><br>
-                <input type="password" id="LPassword" name="Lpassword" value="PasswordWoo"><br><br>
+                <label for="LPassword" style="font-size: max(1vw,1vh);">Password:</label><br>
+                <input type="password" id="LPassword" name="Lpassword" value="PasswordWoo"><br>
                 
-                <button type="submit">Login</button>
+                <button type="submit" style="margin-top: max(0.5vw,0.5vh);">Login</button>
             </form>
-            <div id="result" style="margin-top: 1vw; color: white; font-size: 1.5vw;min-height: 5vw;background-color: aqua;"></div>
+
+            <div id="result" style="margin-top: max(1vw,1vh); color: white;background-color: white;flex:1;color:black">
+                wawaw
+            </div>
+        </div>
         </div>
     </div>
 
+    <div id="bottombar"></div>
     
-    <!-- login/register scripts -->
+    <!-- scripts -->
     <script src="/socket.io/socket.io.js"></script>
     <script type="module" src="siteJS.js"></script>
     <script>
+        const messages = [
+            "Welcome to Civs",
+            // "Destroy all buildings of a neighbouring tile to make annexation possible",
+            "Feedback is welcome and given via News page",
+            // "Allying with a neighbour reveals their adjacent tiles",
+            "Different buildings provide different benefits",
+            "A city center is required to deploy units",
+            // "Units can only be trained from your available recruitable population",
+            // "War support and Stability affect contruction time and training",
+            "Training of units still needs polish",
+            "Pathfinding still needs to be finished (requires some optimisations)",
+            "Tick system implemented, though resource nodes to allow resource increment is not"
+        ];
 
-    </script>
-    
-    <script>
-        // document.getElementById('LoginForm').addEventListener('submit', async function (e) {
-        //     e.preventDefault(); // prevent page reload
+        let current = 0;
 
-        //     const username = document.getElementById('LUsername').value;
-        //     const password = document.getElementById('LPassword').value;
+        const element = document.getElementById("slideElement");
 
-        //     // const res = await fetch('/Login-user', {
-        //     //     method: 'POST',
-        //     //     headers: {'Content-Type': 'application/json'},
-        //     //     body: JSON.stringify({ username, password })
-        //     // });
-        //     emitLogin(username,password);
-        // });
+        const allMessages = [...messages, ...messages];
+        element.innerHTML = allMessages.map(message => `<span>${message}</span>`).join("");
     </script>
 </body>
 </html>

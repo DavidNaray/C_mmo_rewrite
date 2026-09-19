@@ -286,11 +286,7 @@ AStarResult* AStarPathCost(
 }
 
 
-static SubgridPortalRecord* findAbstractPortal(
-    AbstractMap* map,
-    WalkMapPoint p
-) {
-
+static SubgridPortalRecord* findAbstractPortal(AbstractMap* map,WalkMapPoint p) {
     int subx = p.x / 32;
     int suby = p.y / 32;
 
@@ -315,11 +311,7 @@ static SubgridPortalRecord* findAbstractPortal(
     return NULL;
 }
 
-static int findAbstractSearchPoint(
-    WalkMapPoint* points,
-    int count,
-    WalkMapPoint p
-) {
+static int findAbstractSearchPoint(WalkMapPoint* points,int count,WalkMapPoint p) {
     for (int i = 0; i < count; i++) {
         if (points[i].x  == p.x &&
             points[i].y  == p.y &&
@@ -330,9 +322,7 @@ static int findAbstractSearchPoint(
     return -1;
 }
 
-AStarResult* AbstractAStar(
-    WalkMapPoint startP,WalkMapPoint goalP
-) {
+AStarResult* AbstractAStar(WalkMapPoint startP,WalkMapPoint goalP) {
     //rather than using a buffer, traverse abstractmaps
     PriorityQueue open={ .head=NULL, .tail=NULL, .size=0 };
     bool reached=false;
@@ -443,8 +433,6 @@ AStarResult* AbstractAStar(
                 push_Node(&open,neighbour,fScore);
             }
         }
-
-        
     }
 
     //there is a path

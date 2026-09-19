@@ -2,13 +2,15 @@
 
 #include "../MongoDBReadWriteCache/Cache.h"
 #include "../MongoDBReadWriteCache/Schema/UserBreakdown.h"
-#include "../MongoDBReadWriteCache/Schema/TileSchema.h"
+// #include "../MongoDBReadWriteCache/Schema/TileSchema.h"
 #include "../MongoDBReadWriteCache/ReadUser.h"
 #include "../MongoDBReadWriteCache/Cache.h"
 #include <mongoc/mongoc.h>
 
 #include <cJSON.h>
 #include <windows.h>
+
+#include "BuildingComponent.h"
 
 TickSystem TickS;
 
@@ -27,102 +29,11 @@ void initBuckets() {
     TickS.currBucket=0;
 }
 
-
 void IncrementTickSystem(){
     Bucket* b = &TickS.Buckets[TickS.currBucket];
 
     //construction
-    pthread_mutex_lock(&GlobalCache->lock);
-    for (int i = 0; i < b->Constructions.count; i++) {
-        ConstructionOrders* co = b->Constructions.list[i];
-        
-        Tile * ftile=cache_get_tile(GlobalCache,co->x,co->y);
-
-        Building* building = ftile->buildings.list[co->index];
-        building->base.health++;
-        int completeness = (building->base.health * 100) / building->base.maxHealth;
-        if (completeness > 100) completeness = 100;
-        
-        char uniquenames[9][256];
-        int uniquecount=TileObservers(ftile,uniquenames);
-        
-        //alert users of bumped health
-        char informPart[512];
-        informPart[0] = '\0';  // start empty
-        strcat(informPart, "\"inform\":[");
-        for(int k = 0; k <  uniquecount; k++){
-            strcat(informPart, "\"");
-            strcat(informPart, uniquenames[k]);
-            strcat(informPart, "\"");
-            if (k < uniquecount - 1) strcat(informPart, ",");
-        }
-        strcat(informPart, "]");
-        
-        char detailsPart[512];
-        snprintf(
-            detailsPart, sizeof(detailsPart),
-            "\"details\":{"
-                "\"Health\":%d,"
-                "\"percent\":%d,"
-                "\"cx\":%d,"
-                "\"cy\":%d,"
-                "\"ServerId\":%d,"
-                "\"building\":\"%s\""
-            "}",
-            building->base.health,
-            completeness,
-            ftile->x,
-            ftile->y,
-            building->base.ServerId,
-            StringFrombType(building->whichBuilding)
-        );
-
-        char msg[1024];
-        snprintf(
-            msg, sizeof(msg),
-            "{\"type\":\"BuildingConstructionUpdate\",%s,%s}",
-            informPart,
-            detailsPart
-        );
-
-        send_message(msg);
-
-        if (building->base.health >= building->base.maxHealth) {
-            // construction complete
-            snprintf(
-                detailsPart, sizeof(detailsPart),
-                "\"details\":{"
-                    "\"cx\":%d,"
-                    "\"cy\":%d,"
-                    "\"ServerId\":%d,"
-                    "\"building\":\"%s\""
-                "}",
-                ftile->x,
-                ftile->y,
-                building->base.ServerId,
-                StringFrombType(building->whichBuilding)
-            );
-
-            snprintf(
-                msg, sizeof(msg),
-                "{\"type\":\"BuildingOperational\",%s,%s}",
-                informPart,
-                detailsPart
-            );
-
-            send_message(msg);
-
-            //remove the build order
-            for (int j = i; j < b->Constructions.count - 1; j++) {
-                b->Constructions.list[j] = b->Constructions.list[j + 1];
-            }
-            b->Constructions.count--;
-            i--;   // stay at same index after shift
-
-        }
-
-    }
-    pthread_mutex_unlock(&GlobalCache->lock);
+    BuildingLoop(b);
 
 
     //unit training
@@ -222,13 +133,12 @@ void AddMovementOrder(int cx,int cy,int px,int py) {
     }
 
     MovementOrders* mo = malloc(sizeof(MovementOrders));
-    mo->Destination[0][0] = cx;
-    mo->Destination[0][1] = cy;
-    mo->Destination[1][0] = px;
-    mo->Destination[1][1] = py;
+
+    WalkMapPoint yeah={.x=px,.y=py,.tx=cx,.ty=cy};
+    mo->Destination=yeah;
 
     // MovementId generation left to you
-    memset(mo->MovementId, 0, sizeof(mo->MovementId));
+    generate_task_id(mo->MovementId);
 
     ml->list[ml->count++] = mo;
 }

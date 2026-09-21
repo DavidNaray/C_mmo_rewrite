@@ -152,6 +152,15 @@ pipeMsgs.on('data', (data) => {
                     sockid=usersocketMap.get(msg.username)
                     io.to(sockid).emit('RegimenUpdate',{"slot":msg.slot,"done":msg.done});
                     break;
+                case "RegimentDeployment":
+                    for(const username of msg.observers){
+                        sockid=usersocketMap.get(username)
+                        io.to(sockid).emit('RegimentDeployment',msg.details);
+                    }
+                    // sockid=usersocketMap.get(msg.username)
+                    // console.log("supposed locations",msg.username,msg.selected)
+                    // io.to(sockid).emit('DeployLocs',{names:msg.names,selected:msg.selected});
+                    break;
                 case "DelTrainSuccess":
                     sockid=usersocketMap.get(msg.username)
                     io.to(sockid).emit('DelTrain',{"slot":msg.slot});
@@ -419,7 +428,6 @@ io.on('connection', async (socket) => {
 
     socket.on('NewRegimen',async ({RequestMetaData}) => {
         if(!socket.authenticated){console.log("unauthorised tile request");return;}
-        // console.log(RequestMetaData)
         pipe.write(JSON.stringify({
             type: "NewRegimen",
             username: socket.username,
@@ -428,15 +436,18 @@ io.on('connection', async (socket) => {
 
     });
 
-    socket.on('AdjustRegimen',async ({RequestMetaData}) => {});
-
-    socket.on('unitdeploymentposition',async ({RequestMetaData}) => {});
-
-    socket.on('RegimenDeploy',async ({RequestMetaData}) => {});
+    socket.on('RegimenDeploy',async (slot) => {
+        if(!socket.authenticated){console.log("unauthorised tile request");return;}
+        // console.log("slot bruh",slot)
+        pipe.write(JSON.stringify({
+            type: "DeployRegimen",
+            username: socket.username,
+            regSlot:slot,
+        }));
+    });
 
     socket.on('DestroyRegimen',async (slot) => {
         if(!socket.authenticated){console.log("unauthorised tile request");return;}
-        console.log(slot)
         pipe.write(JSON.stringify({
             type: "DestroyRegimen",
             username: socket.username,
@@ -448,20 +459,3 @@ io.on('connection', async (socket) => {
     // Handle disconnect
     socket.on("disconnect", () => {});
 });
-
-
-async function gameTick() {
-    for (const [userId, Message] of UserMessages) {
-        const TheirSocket=usersocketMap.get(userId)
-
-        try{
-            for (const value of TheirSocket) {
-                io.to(value).emit('TickUpdate', Message);
-            }
-        }catch(nosoc){console.log("no socket?",nosoc)}
-    
-    }
-}
-
-setInterval(gameTick, 200);//5 calls a second
-// setInterval(TickManager.ResourceMessage.bind(TickManager), TickManager.GetResourceTickRate());

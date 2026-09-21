@@ -64,6 +64,7 @@ export function setupSocketConnection(){
     socket.on("RegimenReady", (response) => {console.log("RegimenReady",response)})
     socket.on("RegimenUpdate", (response) => {HandleRegUpdate(response);})
     socket.on("DelTrain", (response) => {RemoveTraining(response);})
+    socket.on("RegimentDeployment", (response) => {console.log("REGIMEN",response)})
 
     socket.on("buildingplacementhover", (response) => {HandleMovePlacementBuilding(response.RequestMetaData)})
     socket.on("BuildingPlaced", async (response) => { await HandlePlaceBuilding(response)})
@@ -431,7 +432,7 @@ function stringintoURL(str){return `Icons/Units/${str}.png`;}
 function HandleRegLoad(regimens){for (const reg of regimens) {HandleNewRegimen(reg);}}
 
 function HandleNewRegimen(NewRegimen){
-
+    // console.log("HANDLLING NEW REGIMENENENN",NewRegimen)
     const To=UImanager.getTBRegBody()
 
     let option=document.createElement("div");
@@ -649,7 +650,6 @@ async function HandlePlaceBuilding(Building){
         let BotContainer=document.createElement("div");
         StyleBotContainer(BotContainer);
         ProgressBar(BotContainer);
-        DeployButton(BotContainer);
         innerContainer.appendChild(BotContainer);
 
         To.appendChild(option);

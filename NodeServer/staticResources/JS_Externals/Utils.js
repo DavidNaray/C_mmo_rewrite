@@ -121,7 +121,7 @@ export function ProgressBar(elem){
     elem.appendChild(ProgressBar);
 }
 
-export function DeployButton(elem){
+export function DeployButton(elem,slot){
     let Deploy=document.createElement("div");
     Deploy.style.height="100%"
     Deploy.style.aspectRatio="1/1"
@@ -130,6 +130,11 @@ export function DeployButton(elem){
     Deploy.style.backgroundImage="url('Icons/Deploy.png')"
     Deploy.className="IconGeneral"
     Deploy.style.marginLeft="max(4px, 0.3vw)"
+
+    // console.log("deploybutton is recieving:",slot)
+    Deploy.addEventListener("click", function() {
+        socket.emit('RegimenDeploy',slot)
+    });
 
     elem.appendChild(Deploy);
 }

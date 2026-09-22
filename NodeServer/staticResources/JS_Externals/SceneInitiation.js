@@ -64,7 +64,7 @@ export function setupSocketConnection(){
     socket.on("RegimenReady", (response) => {console.log("RegimenReady",response)})
     socket.on("RegimenUpdate", (response) => {HandleRegUpdate(response);})
     socket.on("DelTrain", (response) => {RemoveTraining(response);})
-    socket.on("RegimentDeployment", (response) => {console.log("REGIMEN",response)})
+    socket.on("RegimentDeployment", async (response) => {await HandleRegimenDeployment(response)})
 
     socket.on("buildingplacementhover", (response) => {HandleMovePlacementBuilding(response.RequestMetaData)})
     socket.on("BuildingPlaced", async (response) => { await HandlePlaceBuilding(response)})
@@ -481,6 +481,38 @@ function RemoveTraining(slot){
     }
 }
 
+async function HandleRegimenDeployment(Regimen){
+    const mapping=["Archer","Spearman","Swordsman"]
+
+    const regName=Regimen.name;
+    const RegSId=Regimen.id;
+    const Owner=Regimen.owner;
+    
+
+    for(const unit of Regimen.soldiers){
+        const unitType=mapping[unit.type]
+        const metaData={
+            attack:unit.attack,
+            health:unit.health,
+            range:unit.range,
+            "AssetClass":"Unit",
+            "position":[unit.position[0]*3,unit.position[1]*3],
+            unitType,
+            Owner,
+            RegSId,
+            regName
+        }
+        // console.log("metaData",metaData)
+        // console.log("unit.pos",unit.position)
+        const LoadTo=globalmanager.getTile(unit.tile[0],unit.tile[1])
+        if(!LoadTo){continue;}
+
+        const objLoad=await globalmanager.objectLoad(unitType,"Unit")
+        if(objLoad){
+            await LoadTo.addToScene(unitType, metaData);
+        }
+    }
+}
 //------------------------------------------------
 
 

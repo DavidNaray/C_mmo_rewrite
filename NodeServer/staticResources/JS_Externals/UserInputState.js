@@ -148,9 +148,13 @@ export class RendererUserInputState{
         if(foundTile && hit){
             const instanced=hit.instanceId !== undefined
             if (instanced) {
-                console.log("hit instanced object",hit)
-                UnitSelectionDisplay([hit])
-                this.SelectedItems=[{chunk:`${foundTile.x},${foundTile.y}`,instanceId:hit.instanceId,obj:hit.object}];
+                // console.log("hit instanced object",hit.instanceId,",",hit.object.metadata)
+                
+                const grabbed=hit.object.metadata.get(hit.instanceId)
+                // console.log("selecting",grabbed)
+                this.SelectedItems=[grabbed]
+
+                // [{chunk:`${foundTile.x},${foundTile.y}`,instanceId:hit.instanceId,obj:hit.object}];
             }else{console.log("hit none instanced object",hit)}
         }
     }
@@ -171,22 +175,24 @@ export class RendererUserInputState{
 
     EmitMovementOrder(){
         if(this.SelectedItems.length==0){return};
-        console.log(this.SelectedItems,"what?")
         const intersectTerrain=this.raycaster.intersectObjects(globalmanager.allTileMeshes, true);
         if (intersectTerrain.length > 0) {
             const MoveToTargetPoint=intersectTerrain[0].point 
             const processedPoint=[MoveToTargetPoint.x,MoveToTargetPoint.y,MoveToTargetPoint.z]
-            
-            const processSelected=this.SelectedItems.map(item => ({sid:item.instanceId,chunk:item.chunk}))
-            const grouped = processSelected.reduce((acc, {sid, chunk}) => {
-                (acc[chunk] ||= []).push(sid);
-                return acc;
-            }, {});
+
+            const processSelected=this.SelectedItems.map(item => ({
+                regiment: item.RegSId,
+                unitType:item.unitType,
+                index:item.index,
+
+            }));
+            // console.log("repackaged",processSelected)
 
             const RequestMetaData={
                 "position":processedPoint,
-                "SelectedUnits":grouped
+                "SelectedUnits":processSelected
             }
+            console.log("repackaged",RequestMetaData)
             socket.emit('MovementCommand',{"RequestMetaData":RequestMetaData})
         }
     }

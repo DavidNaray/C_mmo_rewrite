@@ -11,6 +11,7 @@
 #include <windows.h>
 
 #include "BuildingComponent.h"
+#include "MovementComponent.h"
 
 TickSystem TickS;
 
@@ -113,16 +114,11 @@ void IncrementTickSystem(){
     }
     pthread_mutex_unlock(&GlobalCache->lock);
 
-
+    MovementLoop(b);
     //movement
-    for (int i = 0; i < b->Movements.count; i++) {
-        // MovementOrders* mo = b->Movements.list[i];
+    // for (int i = 0; i < b->Movements.count; i++) {
 
-        // Task t;
-        // t.func = AStarTask;
-        // t.arg = mo;
-        // push_task(&scheduler.queues[1], t);
-    }
+    // }
 
     //next bucket
     TickS.currBucket = (TickS.currBucket + 1) % 5;
@@ -137,7 +133,7 @@ static void* grow_list(void* list, int* capacity, size_t elemSize) {
     return realloc(list, (*capacity) * elemSize);
 }
 
-void AddMovementOrder(int cx,int cy,int px,int py) {
+void AddMovementOrder(MovementCommand* Morder) {
     Bucket* b = &TickS.Buckets[TickS.currBucket];
     MovementList* ml = &b->Movements;
 
@@ -147,8 +143,7 @@ void AddMovementOrder(int cx,int cy,int px,int py) {
 
     MovementOrders* mo = malloc(sizeof(MovementOrders));
 
-    WalkMapPoint yeah={.x=px,.y=py,.tx=cx,.ty=cy};
-    mo->Destination=yeah;
+    mo->order=Morder;
 
     // MovementId generation left to you
     generate_task_id(mo->MovementId);

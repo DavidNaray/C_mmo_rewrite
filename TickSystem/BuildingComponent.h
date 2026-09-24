@@ -5,9 +5,4 @@
 
 void BuildingLoop(Bucket* b);
 
-
-void AddMovementOrder(int cx,int cy,int px,int py);
-void AddConstructionOrder(int index,int cx,int cy,int px,int py);
-void AddUserWithTrainingOrders(char* username);
-
 #endif

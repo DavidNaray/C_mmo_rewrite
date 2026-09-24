@@ -2,11 +2,11 @@
 #define tick_H   // these form a guard
 
 #include "../MongoDBReadWriteCache/Schema/TileSchema.h"
+#include "../MongoDBReadWriteCache/Schema/UserBreakdown.h"
 
 typedef struct {
-    WalkMapPoint Destination;
     char MovementId[17];
-    
+    MovementCommand* order;
 } MovementOrders;
 
 typedef struct {
@@ -59,7 +59,7 @@ void initBuckets();
 void IncrementTickSystem();
 
 
-void AddMovementOrder(int cx,int cy,int px,int py);
+void AddMovementOrder(MovementCommand* Morder);
 void AddConstructionOrder(int index,int cx,int cy,int px,int py);
 void AddUserWithTrainingOrders(char* username);
 

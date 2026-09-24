@@ -491,12 +491,15 @@ async function HandleRegimenDeployment(Regimen){
 
     for(const unit of Regimen.soldiers){
         const unitType=mapping[unit.type]
+        // console.log("putting unit int",unit);
         const metaData={
             attack:unit.attack,
             health:unit.health,
             range:unit.range,
             "AssetClass":"Unit",
             "position":[unit.position[0]*3,unit.position[1]*3],
+            index:unit.index,
+            chunk:[unit.tile[0],unit.tile[1]],
             unitType,
             Owner,
             RegSId,

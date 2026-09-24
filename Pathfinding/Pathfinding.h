@@ -32,7 +32,9 @@ typedef struct {
     WalkMapPoint route[];
 } AStarResult;
 
-ExtractRegion* extractRegion(Tile* t, int StartX, int StartY, int segW, int segH);
+
+
+ExtractRegion* extractRegionFunc(Tile* t, int StartX, int StartY, int segW, int segH);
 
 
 ExtractRegion* combineSegments(const ExtractRegion* bufA,const ExtractRegion* bufB);
@@ -42,6 +44,10 @@ AStarResult* AStarPathCost(
     WalkMapPoint startP,WalkMapPoint goalP
 );
 
+SubgridPortalRecord* findAbstractPortal(AbstractMap* map,WalkMapPoint p);
+
 AStarResult* AbstractAStar(WalkMapPoint startP,WalkMapPoint goalP);
+
+void MovementCommandTask(void *arg);
 
 #endif

@@ -198,8 +198,10 @@ class SuperTextureManager{
         const x=chunkX*7.5 - 3.75 + pixelToWorldConversion*pixelCoords[0];
         const z=chunkY*7.5 - 3.75 + pixelToWorldConversion*pixelCoords[1];
         
-        const pointX=chunkX*this.tileSize + Math.round(pixelCoords[0]/3)
-        const pointY=chunkY*this.tileSize + Math.round(pixelCoords[1]/3)
+        // const pointX=chunkX*this.tileSize + Math.round(pixelCoords[0]/3)
+        // const pointY=chunkY*this.tileSize + Math.round(pixelCoords[1]/3)
+        const pointX=(chunkX - this.minimumChunkX) * this.tileSize + Math.round(pixelCoords[0]/3)
+        const pointY=(chunkY - this.minimumChunkY) * this.tileSize + Math.round(pixelCoords[1]/3)
         const y=((this.ctx.getImageData(pointX,pointY,1,1).data[0]) / (7.5*30))*HeightScale;
         
         // console.log(y,chunkX,chunkY,pointX,pointY,x,y, "sampled y coord")

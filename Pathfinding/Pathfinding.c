@@ -12,7 +12,7 @@
 #include <windows.h>
 #include <float.h>
 
-
+#include "../TickSystem/TickSystem.h"
 
 void push_Node(PriorityQueue* q, WalkMapPoint val, float prio) {
     q->size++;
@@ -58,7 +58,7 @@ Node* pop_Node(PriorityQueue *q) {
 }
 
 
-ExtractRegion* extractRegion(Tile* t, int StartX, int StartY, int segW, int segH){
+ExtractRegion* extractRegionFunc(Tile* t, int StartX, int StartY, int segW, int segH){
     //function dedicated to cutting 32x32 cuts from a tiles buffer
     // WalkMapPoint srcbuffer[512][512]
     size_t count = segW * segH;
@@ -240,6 +240,11 @@ AStarResult* AStarPathCost(
                 continue;//if not walkable, ignore
             }
 
+            if (wp->object != NULL) {
+                // occupied by another unit
+                continue;
+            }
+            
             float tentativeG = gScore[curIdx] + wp->cost;
 
             if (tentativeG < gScore[nIdx]) {
@@ -286,7 +291,7 @@ AStarResult* AStarPathCost(
 }
 
 
-static SubgridPortalRecord* findAbstractPortal(AbstractMap* map,WalkMapPoint p) {
+SubgridPortalRecord* findAbstractPortal(AbstractMap* map,WalkMapPoint p) {
     int subx = p.x / 32;
     int suby = p.y / 32;
 
@@ -295,20 +300,34 @@ static SubgridPortalRecord* findAbstractPortal(AbstractMap* map,WalkMapPoint p) 
     ) {return NULL;}
 
     SubgridRecord* rec = &map->subgrids[suby][subx];
-
+    
+    SubgridPortalRecord* closest = NULL;
+    int bestDistance = INT_MAX;
+    
     for (int i = 0; i < rec->portalCount; i++) {
         SubgridPortalRecord* portal =&rec->portals[i];
 
-        if (portal->localPortal.x  == p.x &&
-            portal->localPortal.y  == p.y &&
-            portal->localPortal.tx == p.tx &&
-            portal->localPortal.ty == p.ty) {
+        // if (portal->localPortal.x  == p.x &&
+        //     portal->localPortal.y  == p.y &&
+        //     portal->localPortal.tx == p.tx &&
+        //     portal->localPortal.ty == p.ty) {
 
-            return portal;
+        //     return portal;
+        // }
+        
+        int dx = portal->localPortal.x - p.x;
+        int dy = portal->localPortal.y - p.y;
+        
+        int distance = dx * dx + dy * dy;
+
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            closest = portal;
         }
     }
 
-    return NULL;
+    // return NULL;
+    return closest;
 }
 
 static int findAbstractSearchPoint(WalkMapPoint* points,int count,WalkMapPoint p) {
@@ -479,4 +498,77 @@ AStarResult* AbstractAStar(WalkMapPoint startP,WalkMapPoint goalP) {
     result->count = 0;
 
     return result;
+}
+
+void MovementCommandTask(void *arg){
+    MovementCommand us=*(MovementCommand *) arg;
+    free(arg);
+
+    //filter the movement command for ownership and existence
+    //create a new, movementORDER that distills the units and targets
+    //pass it off into the tick system
+    int out[4];
+    WorldToLocal(us.username,us.position[0],us.position[1],out);
+
+    MovementCommand* order=calloc(1, sizeof(MovementCommand));
+    if (!order) {return;}
+    strncpy(order->username, us.username, sizeof(order->username) - 1);
+    order->username[sizeof(order->username) - 1] = '\0';
+
+    order->Form=Direct;
+
+    order->tile[0]=out[0];
+    order->tile[1]=out[1];
+    order->pixel[0]=out[2];
+    order->pixel[1]=out[3];
+
+    // order->selectedUnits = NULL;
+    order->selectedUnits = malloc(sizeof(SelectedUnit) * us.selectedCount);
+    order->selectedCount = 0;
+    
+    //since user exists and the regimen should exist already no need to enforce cache.. i think
+    User* u=cache_get_user(GlobalCache,us.username);
+    //validate the units now
+    for (int i = 0; i < us.selectedCount; i++) {
+        SelectedUnit* requested = &us.selectedUnits[i];
+
+        Regimen* FoundReg=NULL;
+        for(int k=0;k<u->regimens.count;k++){
+            FoundReg=u->regimens.regimens[k];
+            if(FoundReg->id == requested->regiment){break;}
+            FoundReg=NULL;
+        }
+
+        if(FoundReg==NULL){continue;}/*reg doesnt exist for unit*/
+
+        //ok so the regiment does exist... but does the unit exist within it?
+
+        UnitBlock* block = FoundReg->units[requested->UType];
+        if(block==NULL){continue;}
+
+        if (requested->index < 0 || requested->index >= block->count) {continue;}
+
+        //valid unit yay, add to the order
+        order->selectedUnits[order->selectedCount] = *requested;
+        order->selectedCount++;
+    }
+    free(us.selectedUnits);
+
+    if (order->selectedCount == 0) {
+        free(order->selectedUnits);
+        free(order);
+        return;
+    }
+
+    SelectedUnit *tmp = realloc(
+        order->selectedUnits,
+        sizeof(SelectedUnit) * order->selectedCount
+    );
+    
+    if (tmp) {
+        order->selectedUnits = tmp;
+    }
+
+    //pass the order into the tick system
+    AddMovementOrder(order);
 }

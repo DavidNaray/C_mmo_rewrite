@@ -424,7 +424,16 @@ io.on('connection', async (socket) => {
 
 
     //sockets pertaining to unit movement and creation
-    socket.on('MovementCommand',async ({RequestMetaData}) => {});
+    socket.on('MovementCommand',async ({RequestMetaData}) => {
+        if(!socket.authenticated){console.log("unauthorised tile request");return;}
+        console.log("movement details son:",RequestMetaData)
+        pipe.write(JSON.stringify({
+            type: "MovementCommand",
+            username: socket.username,
+            target:RequestMetaData.position,
+            units:RequestMetaData.SelectedUnits
+        }));
+    });
 
     socket.on('NewRegimen',async ({RequestMetaData}) => {
         if(!socket.authenticated){console.log("unauthorised tile request");return;}

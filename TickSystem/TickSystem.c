@@ -133,7 +133,7 @@ static void* grow_list(void* list, int* capacity, size_t elemSize) {
     return realloc(list, (*capacity) * elemSize);
 }
 
-void AddMovementOrder(MovementCommand* Morder) {
+void AddMovementOrder(MovementDistilled* Morder) {
     Bucket* b = &TickS.Buckets[TickS.currBucket];
     MovementList* ml = &b->Movements;
 

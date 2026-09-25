@@ -2,6 +2,7 @@
 #define PathF_H   // these form a guard
 
 #include "../MongoDBReadWriteCache/Schema/TileSchema.h"
+#include "../MongoDBReadWriteCache/Schema/UserBreakdown.h"
 
 typedef struct {
     int height;
@@ -32,7 +33,15 @@ typedef struct {
     WalkMapPoint route[];
 } AStarResult;
 
+typedef struct MovementDistilled {
+    char username[256];
+    Formation Form;
+    WalkMapPoint TargetP;
 
+    //in the end its units in regiments but atp, we found those units
+    Unit** selectedUnits;
+    int selectedCount;
+} MovementDistilled;
 
 ExtractRegion* extractRegionFunc(Tile* t, int StartX, int StartY, int segW, int segH);
 

@@ -2,11 +2,12 @@
 #define tick_H   // these form a guard
 
 #include "../MongoDBReadWriteCache/Schema/TileSchema.h"
-#include "../MongoDBReadWriteCache/Schema/UserBreakdown.h"
+// #include "../MongoDBReadWriteCache/Schema/UserBreakdown.h"
+#include "../Pathfinding/Pathfinding.h"
 
 typedef struct {
     char MovementId[17];
-    MovementCommand* order;
+    MovementDistilled* order;
 } MovementOrders;
 
 typedef struct {
@@ -59,7 +60,7 @@ void initBuckets();
 void IncrementTickSystem();
 
 
-void AddMovementOrder(MovementCommand* Morder);
+void AddMovementOrder(MovementDistilled* Morder);
 void AddConstructionOrder(int index,int cx,int cy,int px,int py);
 void AddUserWithTrainingOrders(char* username);
 

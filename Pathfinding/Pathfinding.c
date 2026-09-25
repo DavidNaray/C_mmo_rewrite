@@ -1,7 +1,7 @@
 #include "Pathfinding.h"
 
 #include "../MongoDBReadWriteCache/Cache.h"
-#include "../MongoDBReadWriteCache/Schema/UserBreakdown.h"
+// #include "../MongoDBReadWriteCache/Schema/UserBreakdown.h"
 #include "../MongoDBReadWriteCache/ReadUser.h"
 #include "../MongoDBReadWriteCache/Cache.h"
 #include <mongoc/mongoc.h>
@@ -510,64 +510,74 @@ void MovementCommandTask(void *arg){
     int out[4];
     WorldToLocal(us.username,us.position[0],us.position[1],out);
 
-    MovementCommand* order=calloc(1, sizeof(MovementCommand));
-    if (!order) {return;}
+    // MovementCommand* order=calloc(1, sizeof(MovementCommand));
+    MovementDistilled* order = calloc(1, sizeof(MovementDistilled));
+    if (!order) {free(us.selectedUnits);return;}
     strncpy(order->username, us.username, sizeof(order->username) - 1);
     order->username[sizeof(order->username) - 1] = '\0';
 
     order->Form=Direct;
 
-    order->tile[0]=out[0];
-    order->tile[1]=out[1];
-    order->pixel[0]=out[2];
-    order->pixel[1]=out[3];
+    order->TargetP.tx = out[0];
+    order->TargetP.ty = out[1];
+    order->TargetP.x  = out[2];
+    order->TargetP.y  = out[3];
 
     // order->selectedUnits = NULL;
-    order->selectedUnits = malloc(sizeof(SelectedUnit) * us.selectedCount);
+    order->selectedUnits = malloc(sizeof(Unit*) * us.selectedCount);
     order->selectedCount = 0;
-    
+    if (!order->selectedUnits) {free(order);free(us.selectedUnits);return;}
+       
     //since user exists and the regimen should exist already no need to enforce cache.. i think
     User* u=cache_get_user(GlobalCache,us.username);
+    if (!u) {free(order->selectedUnits);free(order);free(us.selectedUnits);return;}
+
     //validate the units now
     for (int i = 0; i < us.selectedCount; i++) {
         SelectedUnit* requested = &us.selectedUnits[i];
-
+        
         Regimen* FoundReg=NULL;
         for(int k=0;k<u->regimens.count;k++){
             FoundReg=u->regimens.regimens[k];
             if(FoundReg->id == requested->regiment){break;}
             FoundReg=NULL;
         }
-
-        if(FoundReg==NULL){continue;}/*reg doesnt exist for unit*/
-
-        //ok so the regiment does exist... but does the unit exist within it?
+        if(FoundReg==NULL){continue;}
 
         UnitBlock* block = FoundReg->units[requested->UType];
         if(block==NULL){continue;}
 
         if (requested->index < 0 || requested->index >= block->count) {continue;}
 
+        Unit* unit = &block->individuals[requested->index];
+
+        MovementDistilled* oldOrderD=unit->movementDist;
+        if (oldOrderD) {
+            printf("woahhhh, you were in a different order son?");
+            // remove unit from previous movement order
+            for (int j = 0; j < oldOrderD->selectedCount; j++) {
+                if (oldOrderD->selectedUnits[j] == unit) {
+                    int last = oldOrderD->selectedCount - 1;
+
+                    oldOrderD->selectedUnits[j] = oldOrderD->selectedUnits[last];
+                    oldOrderD->selectedCount--;
+
+                    break;
+                }
+            }
+        }
+        unit->movementDist=order;
         //valid unit yay, add to the order
-        order->selectedUnits[order->selectedCount] = *requested;
+        order->selectedUnits[order->selectedCount] = unit;
         order->selectedCount++;
     }
+
     free(us.selectedUnits);
+    if (order->selectedCount == 0) {free(order->selectedUnits);free(order);return;}
 
-    if (order->selectedCount == 0) {
-        free(order->selectedUnits);
-        free(order);
-        return;
-    }
-
-    SelectedUnit *tmp = realloc(
-        order->selectedUnits,
-        sizeof(SelectedUnit) * order->selectedCount
-    );
+    Unit** tmp = realloc(order->selectedUnits,sizeof(Unit*) * order->selectedCount);
     
-    if (tmp) {
-        order->selectedUnits = tmp;
-    }
+    if (tmp) {order->selectedUnits = tmp;}
 
     //pass the order into the tick system
     AddMovementOrder(order);
